@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planner Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="logo">
+                <img src="logo.png" alt="Meal Planner Pro">
+                <h1>Meal Planner Pro</h1>
+            </div>
+            <nav>
+                <button :class="{ active: activeTab === 'menu' }" @click="activeTab = 'menu'">
+                    <i class="bi bi-calendar-week"></i> Menu
+                </button>
+                <button :class="{ active: activeTab === 'favorites' }" @click="activeTab = 'favorites'">
+                    <i class="bi bi-heart"></i> Favorites
+                </button>
+                <button :class="{ active: activeTab === 'shopping' }" @click="activeTab = 'shopping'">
+                    <i class="bi bi-cart"></i> Shopping List
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Menu Planner -->
+            <section v-if="activeTab === 'menu'" class="menu-section">
+                <div class="section-header">
+                    <h2>Two-Week Menu Planner</h2>
+                    <div class="menu-actions">
+                        <button @click="autoFillMenu" class="primary-btn">
+                            <i class="bi bi-magic"></i> Auto-Fill Menu
+                        </button>
+                        <button @click="clearMenu" class="secondary-btn">
+                            <i class="bi bi-trash"></i> Clear Menu
+                        </button>
+                    </div>
+                </div>
+
+                <div class="weeks-container">
+                    <div v-for="(week, weekIndex) in menuWeeks" :key="'week'+weekIndex" class="week">
+                        <h3>Week {{ weekIndex + 1 }}</h3>
+                        <div class="days">
+                            <div v-for="(day, dayIndex) in week" :key="'day'+dayIndex" class="day-card">
+                                <div class="day-header">
+                                    <h4>{{ getDayName(dayIndex) }}</h4>
+                                    <button @click="clearDay(weekIndex, dayIndex)" class="icon-btn">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </div>
+                                <div class="meals">
+                                    <div v-if="day.recipe" class="meal-assigned">
+                                        <div class="recipe-info">
+                                            <h5>{{ day.recipe.title }}</h5>
+                                            <p v-if="day.recipe.description" class="meal-description">{{ day.recipe.description }}</p>
+                                        </div>
+                                        <div class="meal-actions">
+                                            <button @click="viewRecipe(day.recipe)" class="icon-btn">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button @click="clearDay(weekIndex, dayIndex)" class="icon-btn">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div v-else class="add-meal">
+                                        <button @click="assignRecipe(weekIndex, dayIndex)" class="secondary-btn">
+                                            <i class="bi bi-plus-circle"></i> Add Meal
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Favorites List -->
+            <section v-if="activeTab === 'favorites'" class="favorites-section">
+                <div class="section-header">
+                    <h2>Favorite Recipes</h2>
+                    <div class="favorites-actions">
+                        <button @click="showAddRecipeModal = true" class="primary-btn">
+                            <i class="bi bi-plus-lg"></i> Add Recipe
+                        </button>
+                        <button @click="showAddFromUrlModal = true" class="secondary-btn">
+                            <i class="bi bi-link-45deg"></i> Add from URL
+                        </button>
+                    </div>
+                </div>
+
+                <div class="search-container">
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" v-model="searchTerm" placeholder="Search recipes...">
+                        <button v-if="searchTerm" @click="searchTerm = ''" class="icon-btn">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="filteredFavorites.length === 0" class="empty-state">
+                    <i class="bi bi-heart"></i>
+                    <p v-if="searchTerm">No recipes found matching "{{ searchTerm }}"</p>
+                    <p v-else>No favorite recipes yet. Add some recipes to get started!</p>
+                </div>
+
+                <div v-else class="favorites-grid">
+                    <div v-for="recipe in filteredFavorites" :key="recipe.id" class="recipe-card">
+                        <div class="recipe-header">
+                            <h3>{{ recipe.title }}</h3>
+                            <div class="recipe-badges">
+                                <span v-if="recipe.isDefault" class="badge default">Default</span>
+                            </div>
+                        </div>
+                        <p class="recipe-description">{{ recipe.description }}</p>
+                        <div class="recipe-actions">
+                            <button @click="viewRecipe(recipe)" class="secondary-btn">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                            <button @click="editRecipe(recipe)" class="secondary-btn">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
+                            <button @click="toggleDefault(recipe)" class="icon-btn" :class="{ 'active': recipe.isDefault }">
+                                <i class="bi bi-star" v-if="!recipe.isDefault"></i>
+                                <i class="bi bi-star-fill" v-else></i>
+                            </button>
+                            <button @click="confirmDeleteRecipe(recipe)" class="icon-btn">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Shopping List -->
+            <section v-if="activeTab === 'shopping'" class="shopping-section">
+                <div class="section-header">
+                    <h2>Shopping List</h2>
+                    <div class="shopping-actions">
+                        <button @click="generateShoppingList" class="primary-btn">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh List
+                        </button>
+                        <button @click="printShoppingList" class="secondary-btn">
+                            <i class="bi bi-printer"></i> Print
+                        </button>
+                        <button @click="emailShoppingList" class="secondary-btn">
+                            <i class="bi bi-envelope"></i> Email
+                        </button>
+                    </div>
+                </div>
+
+                <div class="shopping-list">
+                    <div v-if="shoppingItems.length === 0" class="empty-state">
+                        <i class="bi bi-cart"></i>
+                        <p>Your shopping list is empty. Add meals to your menu to generate a shopping list.</p>
+                    </div>
+                    <div v-else class="ingredient-categories">
+                        <div v-for="(items, category) in groupedShoppingItems" :key="category" class="category">
+                            <h3>{{ category }}</h3>
+                            <ul class="ingredient-list">
+                                <li v-for="item in items" :key="item.id" class="ingredient-item">
+                                    <label :for="'item-'+item.id">
+                                        <input type="checkbox" v-model="item.checked" :id="'item-'+item.id">
+                                        <span :class="{ 'checked': item.checked }">{{ item.name }} - {{ item.amount }}</span>
+                                    </label>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Modals -->
+        <!-- Add Recipe Modal -->
+        <div v-if="showAddRecipeModal" class="modal-overlay">
+            <div class="modal recipe-modal">
+                <div class="modal-header">
+                    <h2>{{ editingRecipe ? 'Edit Recipe' : 'Add New Recipe' }}</h2>
+                    <button @click="cancelRecipeEdit" class="icon-btn">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="recipe-title">Recipe Title*</label>
+                        <input type="text" id="recipe-title" v-model="recipeForm.title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="recipe-description">Description</label>
+                        <textarea id="recipe-description" v-model="recipeForm.description" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-header">
+                            <label>Ingredients*</label>
+                            <button @click="addIngredient" class="small-btn">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </div>
+                        <div v-for="(ingredient, index) in recipeForm.ingredients" :key="index" class="ingredient-row">
+                            <input type="text" v-model="ingredient.amount" placeholder="Amount">
+                            <input type="text" v-model="ingredient.name" placeholder="Ingredient">
+                            <select v-model="ingredient.category">
+                                <option value="Produce">Produce</option>
+                                <option value="Meat & Seafood">Meat & Seafood</option>
+                                <option value="Dairy">Dairy</option>
+                                <option value="Pantry">Pantry</option>
+                                <option value="Frozen">Frozen</option>
+                                <option value="Bakery">Bakery</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <button @click="removeIngredient(index)" class="icon-btn">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="recipe-steps">Preparation Steps*</label>
+                        <textarea id="recipe-steps" v-model="recipeForm.steps" rows="6" required></textarea>
+                    </div>
+                    <div class="form-group checkbox">
+                        <input type="checkbox" id="recipe-default" v-model="recipeForm.isDefault">
+                        <label for="recipe-default">Mark as Default (always include in menu)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="cancelRecipeEdit" class="secondary-btn">Cancel</button>
+                    <button @click="saveRecipe" class="primary-btn">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add From URL Modal -->
+        <div v-if="showAddFromUrlModal" class="modal-overlay">
+            <div class="modal url-modal">
+                <div class="modal-header">
+                    <h2>Add Recipe from URL</h2>
+                    <button @click="showAddFromUrlModal = false" class="icon-btn">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="recipe-url">Recipe URL*</label>
+                        <input type="url" id="recipe-url" v-model="recipeUrl" placeholder="https://..." required>
+                    </div>
+                    <p class="note">
+                        <i class="bi bi-info-circle"></i> 
+                        Paste a URL from a supported recipe site. We'll try to automatically extract the recipe details.
+                    </p>
+                    <div v-if="urlError" class="error-message">
+                        {{ urlError }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="showAddFromUrlModal = false" class="secondary-btn">Cancel</button>
+                    <button @click="fetchRecipeFromUrl" class="primary-btn">Import</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipe View Modal -->
+        <div v-if="showViewRecipeModal" class="modal-overlay">
+            <div class="modal view-recipe-modal">
+                <div class="modal-header">
+                    <h2>{{ selectedRecipe.title }}</h2>
+                    <button @click="showViewRecipeModal = false" class="icon-btn">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p v-if="selectedRecipe.description" class="recipe-description">{{ selectedRecipe.description }}</p>
+                    
+                    <h3>Ingredients</h3>
+                    <ul class="view-ingredients">
+                        <li v-for="(ingredient, index) in selectedRecipe.ingredients" :key="index">
+                            <span class="amount">{{ ingredient.amount }}</span> {{ ingredient.name }}
+                        </li>
+                    </ul>
+                    
+                    <h3>Preparation</h3>
+                    <div class="preparation-steps">
+                        {{ selectedRecipe.steps }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="showViewRecipeModal = false" class="secondary-btn">Close</button>
+                    <button @click="editRecipe(selectedRecipe)" class="primary-btn">Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipe Selector Modal -->
+        <div v-if="showRecipeSelectorModal" class="modal-overlay">
+            <div class="modal recipe-selector-modal">
+                <div class="modal-header">
+                    <h2>Select a Recipe</h2>
+                    <button @click="showRecipeSelectorModal = false" class="icon-btn">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" v-model="selectorSearchTerm" placeholder="Search recipes...">
+                    </div>
+                    
+                    <div v-if="filteredSelectorFavorites.length === 0" class="empty-state">
+                        <p>No recipes found. Try a different search or add a new recipe.</p>
+                    </div>
+                    
+                    <div v-else class="selector-recipes">
+                        <div 
+                            v-for="recipe in filteredSelectorFavorites" 
+                            :key="recipe.id" 
+                            class="selector-recipe-item"
+                            @click="selectRecipeForMenu(recipe)"
+                        >
+                            <h4>{{ recipe.title }}</h4>
+                            <p v-if="recipe.description">{{ recipe.description }}</p>
+                            <span v-if="recipe.isDefault" class="badge default">Default</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="showRecipeSelectorModal = false" class="secondary-btn">Cancel</button>
+                    <button @click="showAddRecipeModal = true; showRecipeSelectorModal = false" class="primary-btn">
+                        <i class="bi bi-plus-lg"></i> New Recipe
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div v-if="showConfirmModal" class="modal-overlay">
+            <div class="modal confirm-modal">
+                <div class="modal-header">
+                    <h2>{{ confirmTitle }}</h2>
+                </div>
+                <div class="modal-body">
+                    <p>{{ confirmMessage }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button @click="showConfirmModal = false" class="secondary-btn">Cancel</button>
+                    <button @click="confirmAction" class="primary-btn danger">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="script.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
