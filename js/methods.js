@@ -534,8 +534,21 @@ export function setupMethods(state) {
     document.body.classList.toggle('dark-mode', state.darkMode.value);
   }
   
+  function toggleSettingsMenu() {
+    state.showSettingsMenu.value = !state.showSettingsMenu.value;
+  }
+  
   // Initialize dark mode on startup
   onMounted(() => {
+    document.addEventListener('click', (event) => {
+      const settingsDropdown = document.querySelector('.settings-dropdown');
+      const isClickInside = settingsDropdown?.contains(event.target);
+      
+      if (!isClickInside && state.showSettingsMenu.value) {
+        state.showSettingsMenu.value = false;
+      }
+    });
+    
     document.body.classList.toggle('dark-mode', state.darkMode.value);
   });
   
@@ -735,6 +748,7 @@ export function setupMethods(state) {
     toggleItemCheck,
     confirmDeleteItem,
     toggleDarkMode,
+    toggleSettingsMenu,
     exportData,
     handleFileSelection,
     importData

@@ -69,6 +69,9 @@ export function AppState() {
   const fileSelected = ref(false);
   const importError = ref('');
   
+  // Add settings menu state
+  const showSettingsMenu = ref(false);
+  
   // Computed properties
   const filteredFavorites = computed(() => {
     let filtered = favorites.value;
@@ -155,6 +158,7 @@ export function AppState() {
     showImportModal,
     importOption,
     fileSelected,
-    importError
+    importError,
+    showSettingsMenu
   };
 }
