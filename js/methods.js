@@ -68,8 +68,10 @@ export function setupMethods(state) {
       // Update any menu items using this recipe
       state.menuWeeks.value.forEach(week => {
         week.forEach(day => {
-          if (day.recipe && day.recipe.id === recipeData.id) {
-            day.recipe = recipeData;
+          for (const mealType of ['breakfast', 'lunch', 'dinner']) {
+            if (day[mealType] && day[mealType].id === recipeData.id) {
+              day[mealType] = recipeData;
+            }
           }
         });
       });
@@ -128,8 +130,14 @@ export function setupMethods(state) {
     // Remove from menu
     state.menuWeeks.value.forEach(week => {
       week.forEach(day => {
-        if (day.recipe && day.recipe.id === recipeId) {
-          day.recipe = null;
+        if (day.breakfast && day.breakfast.id === recipeId) {
+          day.breakfast = null;
+        }
+        if (day.lunch && day.lunch.id === recipeId) {
+          day.lunch = null;
+        }
+        if (day.dinner && day.dinner.id === recipeId) {
+          day.dinner = null;
         }
       });
     });
@@ -146,20 +154,20 @@ export function setupMethods(state) {
     saveToLocalStorage(state);
   }
   
-  function assignRecipe(weekIndex, dayIndex) {
-    state.selectedDay.value = { week: weekIndex, day: dayIndex };
+  function assignRecipe(weekIndex, dayIndex, mealType) {
+    state.selectedDay.value = { week: weekIndex, day: dayIndex, mealType: mealType };
     state.selectorSearchTerm.value = '';
     state.showRecipeSelectorModal.value = true;
   }
   
   function selectRecipeForMenu(recipe) {
-    state.menuWeeks.value[state.selectedDay.value.week][state.selectedDay.value.day].recipe = recipe;
+    state.menuWeeks.value[state.selectedDay.value.week][state.selectedDay.value.day][state.selectedDay.value.mealType] = recipe;
     state.showRecipeSelectorModal.value = false;
     saveToLocalStorage(state);
   }
   
-  function clearDay(weekIndex, dayIndex) {
-    state.menuWeeks.value[weekIndex][dayIndex].recipe = null;
+  function clearDay(weekIndex, dayIndex, mealType) {
+    state.menuWeeks.value[weekIndex][dayIndex][mealType] = null;
     saveToLocalStorage(state);
   }
   
@@ -168,8 +176,8 @@ export function setupMethods(state) {
     state.confirmMessage.value = 'Are you sure you want to clear the entire menu? This will remove all planned meals.';
     state.confirmAction.value = () => {
       state.menuWeeks.value = [
-        Array(7).fill().map(() => ({ recipe: null })),
-        Array(7).fill().map(() => ({ recipe: null }))
+        Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null })),
+        Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
       ];
       saveToLocalStorage(state);
       state.showConfirmModal.value = false;
@@ -178,40 +186,89 @@ export function setupMethods(state) {
   }
   
   function autoFillMenu() {
-    // Filter default recipes
+    // Filter default recipes first
     const defaultRecipes = state.favorites.value.filter(r => r.isDefault);
     
-    // Get non-default recipes for remaining slots
-    const otherRecipes = state.favorites.value.filter(r => !r.isDefault);
+    // Group other recipes by category
+    const breakfastRecipes = state.favorites.value.filter(r => r.category === 'Breakfast' && !r.isDefault);
+    const lunchDinnerRecipes = state.favorites.value.filter(r => 
+      (r.category === 'Lunch/Dinner' || r.category === 'Holiday') && !r.isDefault);
+    const dessertRecipes = state.favorites.value.filter(r => r.category === 'Dessert' && !r.isDefault);
     
     // Copy the current menu
     const newMenu = JSON.parse(JSON.stringify(state.menuWeeks.value));
     
-    // First, place default recipes
+    // First, place default recipes across all meal types
     defaultRecipes.forEach(recipe => {
-      // Find an empty slot
       let placed = false;
       
+      // Try to place according to recipe category
       for (let w = 0; w < newMenu.length && !placed; w++) {
         for (let d = 0; d < newMenu[w].length && !placed; d++) {
-          if (!newMenu[w][d].recipe) {
-            newMenu[w][d].recipe = recipe;
+          // Pick appropriate meal type based on recipe category
+          let mealType;
+          if (recipe.category === 'Breakfast') {
+            mealType = 'breakfast';
+          } else if (recipe.category === 'Dessert') {
+            // Desserts can go with dinner
+            mealType = 'dinner';
+          } else {
+            // Lunch/Dinner and Holiday can go in lunch or dinner
+            mealType = !newMenu[w][d].lunch ? 'lunch' : 'dinner';
+          }
+          
+          if (!newMenu[w][d][mealType]) {
+            newMenu[w][d][mealType] = recipe;
             placed = true;
+          }
+        }
+      }
+      
+      // If still not placed, put in any available slot
+      if (!placed) {
+        for (let w = 0; w < newMenu.length && !placed; w++) {
+          for (let d = 0; d < newMenu[w].length && !placed; d++) {
+            for (const mealType of ['breakfast', 'lunch', 'dinner']) {
+              if (!newMenu[w][d][mealType]) {
+                newMenu[w][d][mealType] = recipe;
+                placed = true;
+                break;
+              }
+            }
           }
         }
       }
     });
     
-    // Then, randomly fill remaining slots
+    // Then fill remaining slots with appropriate category recipes
     for (let w = 0; w < newMenu.length; w++) {
       for (let d = 0; d < newMenu[w].length; d++) {
-        if (!newMenu[w][d].recipe && otherRecipes.length > 0) {
-          // Pick a random recipe
-          const randomIndex = Math.floor(Math.random() * otherRecipes.length);
-          newMenu[w][d].recipe = otherRecipes[randomIndex];
-          
-          // Remove it from the array to avoid duplicates
-          otherRecipes.splice(randomIndex, 1);
+        // Fill breakfast
+        if (!newMenu[w][d].breakfast && breakfastRecipes.length > 0) {
+          const randomIndex = Math.floor(Math.random() * breakfastRecipes.length);
+          newMenu[w][d].breakfast = breakfastRecipes[randomIndex];
+          breakfastRecipes.splice(randomIndex, 1);
+        }
+        
+        // Fill lunch
+        if (!newMenu[w][d].lunch && lunchDinnerRecipes.length > 0) {
+          const randomIndex = Math.floor(Math.random() * lunchDinnerRecipes.length);
+          newMenu[w][d].lunch = lunchDinnerRecipes[randomIndex];
+          lunchDinnerRecipes.splice(randomIndex, 1);
+        }
+        
+        // Fill dinner - try to add a dessert occasionally
+        if (!newMenu[w][d].dinner) {
+          if (Math.random() > 0.7 && dessertRecipes.length > 0) {
+            // 30% chance of dessert
+            const randomIndex = Math.floor(Math.random() * dessertRecipes.length);
+            newMenu[w][d].dinner = dessertRecipes[randomIndex];
+            dessertRecipes.splice(randomIndex, 1);
+          } else if (lunchDinnerRecipes.length > 0) {
+            const randomIndex = Math.floor(Math.random() * lunchDinnerRecipes.length);
+            newMenu[w][d].dinner = lunchDinnerRecipes[randomIndex];
+            lunchDinnerRecipes.splice(randomIndex, 1);
+          }
         }
       }
     }
@@ -227,29 +284,32 @@ export function setupMethods(state) {
     // Get all recipes from the menu
     state.menuWeeks.value.forEach(week => {
       week.forEach(day => {
-        if (day.recipe && day.recipe.ingredients) {
-          day.recipe.ingredients.forEach(ingredient => {
-            const key = `${ingredient.name.toLowerCase()}_${ingredient.category}`;
-            
-            if (itemMap[key]) {
-              // Already have this item, merge
-              itemMap[key].count++;
-            } else {
-              // New item
-              const item = {
-                id: Date.now() + Math.random().toString().slice(2),
-                name: ingredient.name,
-                amount: ingredient.amount,
-                category: ingredient.category,
-                checked: false,
-                count: 1,
-                inKitchen: false
-              };
+        // Process breakfast, lunch, and dinner recipes
+        for (const mealType of ['breakfast', 'lunch', 'dinner']) {
+          if (day[mealType] && day[mealType].ingredients) {
+            day[mealType].ingredients.forEach(ingredient => {
+              const key = `${ingredient.name.toLowerCase()}_${ingredient.category}`;
               
-              itemMap[key] = item;
-              allItems.push(item);
-            }
-          });
+              if (itemMap[key]) {
+                // Already have this item, merge
+                itemMap[key].count++;
+              } else {
+                // New item
+                const item = {
+                  id: Date.now() + Math.random().toString().slice(2),
+                  name: ingredient.name,
+                  amount: ingredient.amount,
+                  category: ingredient.category,
+                  checked: false,
+                  count: 1,
+                  inKitchen: false
+                };
+                
+                itemMap[key] = item;
+                allItems.push(item);
+              }
+            });
+          }
         }
       });
     });

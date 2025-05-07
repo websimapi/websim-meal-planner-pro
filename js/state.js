@@ -5,8 +5,8 @@ export function AppState() {
   const activeTab = ref('menu');
   const favorites = ref([]);
   const menuWeeks = ref([
-    Array(7).fill().map(() => ({ recipe: null })),
-    Array(7).fill().map(() => ({ recipe: null }))
+    Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null })),
+    Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
   ]);
   const shoppingItems = ref([]);
   
@@ -48,7 +48,7 @@ export function AppState() {
   
   // Selected items for operations
   const selectedRecipe = ref({});
-  const selectedDay = ref({ week: 0, day: 0 });
+  const selectedDay = ref({ week: 0, day: 0, mealType: 'dinner' });
   const selectedList = ref('');
   const newItemName = ref('');
   
