@@ -242,13 +242,23 @@ export function setupMethods(state) {
                 amount: ingredient.amount,
                 category: ingredient.category,
                 checked: false,
-                count: 1
+                count: 1,
+                inKitchen: false
               };
               
               itemMap[key] = item;
               allItems.push(item);
             }
           });
+        }
+      });
+    });
+    
+    // Compare with kitchen inventory
+    state.kitchenInventory.value.forEach(kitchenItem => {
+      allItems.forEach(shoppingItem => {
+        if (kitchenItem.checked && shoppingItem.name.toLowerCase() === kitchenItem.name.toLowerCase()) {
+          shoppingItem.inKitchen = true;
         }
       });
     });
@@ -398,7 +408,14 @@ export function setupMethods(state) {
   }
   
   function toggleItemCheck(item, listType) {
+    // Just toggle the checked status - the CSS will handle the strikethrough
     item.checked = !item.checked;
+    
+    // If this is kitchen inventory, we might need to refresh the shopping list
+    if (listType === 'kitchen' && state.activeTab.value === 'kitchen') {
+      generateShoppingList();
+    }
+    
     saveToLocalStorage(state);
   }
   

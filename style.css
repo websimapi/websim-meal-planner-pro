@@ -478,6 +478,37 @@ main {
   color: var(--text-light);
 }
 
+.ingredient-item .kitchen-highlight {
+  background-color: var(--secondary-light);
+  padding: 0 4px;
+  border-radius: 3px;
+  position: relative;
+}
+
+.ingredient-item .kitchen-highlight::after {
+  content: "In Kitchen";
+  position: absolute;
+  top: -20px;
+  left: 0;
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.ingredient-item .kitchen-highlight:hover::after {
+  opacity: 1;
+}
+
+.ingredient-item .checked.kitchen-highlight {
+  text-decoration: line-through;
+  background-color: var(--secondary-light);
+}
+
 .item-actions {
   display: flex;
   gap: 0.25rem;

@@ -31,6 +31,7 @@ export function AppState() {
   const searchTerm = ref('');
   const selectorSearchTerm = ref('');
   const categoryFilter = ref('All');
+  const defaultFilter = ref(false);
   
   // Modals control
   const showAddRecipeModal = ref(false);
@@ -73,6 +74,11 @@ export function AppState() {
         return recipe.title.toLowerCase().includes(term) || 
                recipe.description.toLowerCase().includes(term);
       });
+    }
+    
+    // Filter by default status
+    if (defaultFilter.value) {
+      filtered = filtered.filter(recipe => recipe.isDefault);
     }
     
     // Filter by category
@@ -118,6 +124,7 @@ export function AppState() {
     searchTerm,
     selectorSearchTerm,
     categoryFilter,
+    defaultFilter,
     showAddRecipeModal,
     showAddFromUrlModal,
     showViewRecipeModal,
