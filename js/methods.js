@@ -539,6 +539,177 @@ export function setupMethods(state) {
     document.body.classList.toggle('dark-mode', state.darkMode.value);
   });
   
+  function exportData() {
+    // Collect all app data
+    const appData = {
+      favorites: state.favorites.value,
+      menuWeeks: state.menuWeeks.value,
+      householdEssentials: state.householdEssentials.value,
+      kitchenInventory: state.kitchenInventory.value,
+      darkMode: state.darkMode.value,
+      // Add version info for future compatibility
+      version: '1.0'
+    };
+    
+    // Convert to JSON and create a Blob
+    const jsonData = JSON.stringify(appData, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    
+    // Create a download link and trigger it
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `meal-planner-data-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+  
+  function handleFileSelection(event) {
+    const file = event.target.files[0];
+    if (file) {
+      state.fileSelected.value = true;
+      state.importError.value = '';
+    } else {
+      state.fileSelected.value = false;
+    }
+  }
+  
+  function importData() {
+    const fileInput = document.getElementById('import-file');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+      state.importError.value = 'Please select a file to import';
+      return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      try {
+        // Parse the JSON data
+        const importedData = JSON.parse(e.target.result);
+        
+        // Basic validation
+        if (!importedData.favorites || !Array.isArray(importedData.favorites)) {
+          throw new Error('Invalid data format: Missing favorites array');
+        }
+        
+        if (state.importOption.value === 'override') {
+          // Override - Replace all existing data
+          state.favorites.value = importedData.favorites || [];
+          state.menuWeeks.value = importedData.menuWeeks || [
+            Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null })),
+            Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
+          ];
+          state.householdEssentials.value = importedData.householdEssentials || [];
+          state.kitchenInventory.value = importedData.kitchenInventory || [];
+          state.darkMode.value = importedData.darkMode || false;
+          
+          // Apply dark mode
+          document.body.classList.toggle('dark-mode', state.darkMode.value);
+          
+        } else {
+          // Merge - Add new items while avoiding duplicates
+          
+          // Merge favorites (avoid duplicates by title)
+          if (importedData.favorites && Array.isArray(importedData.favorites)) {
+            const existingTitles = new Set(state.favorites.value.map(r => r.title.toLowerCase()));
+            
+            importedData.favorites.forEach(importedRecipe => {
+              if (!existingTitles.has(importedRecipe.title.toLowerCase())) {
+                state.favorites.value.push({
+                  ...importedRecipe,
+                  id: Date.now() + Math.random().toString().slice(2) // Generate new ID to avoid conflicts
+                });
+                existingTitles.add(importedRecipe.title.toLowerCase());
+              }
+            });
+          }
+          
+          // Merge menu - we keep existing menu but add any missing meal types
+          if (importedData.menuWeeks && Array.isArray(importedData.menuWeeks)) {
+            importedData.menuWeeks.forEach((week, weekIndex) => {
+              if (weekIndex < state.menuWeeks.value.length) {
+                week.forEach((day, dayIndex) => {
+                  // Only add meals if the slot is empty
+                  if (dayIndex < state.menuWeeks.value[weekIndex].length) {
+                    if (!state.menuWeeks.value[weekIndex][dayIndex].breakfast && day.breakfast) {
+                      state.menuWeeks.value[weekIndex][dayIndex].breakfast = day.breakfast;
+                    }
+                    if (!state.menuWeeks.value[weekIndex][dayIndex].lunch && day.lunch) {
+                      state.menuWeeks.value[weekIndex][dayIndex].lunch = day.lunch;
+                    }
+                    if (!state.menuWeeks.value[weekIndex][dayIndex].dinner && day.dinner) {
+                      state.menuWeeks.value[weekIndex][dayIndex].dinner = day.dinner;
+                    }
+                  }
+                });
+              }
+            });
+          }
+          
+          // Merge household essentials (avoid duplicates by name)
+          if (importedData.householdEssentials && Array.isArray(importedData.householdEssentials)) {
+            const existingNames = new Set(state.householdEssentials.value.map(item => item.name.toLowerCase()));
+            
+            importedData.householdEssentials.forEach(importedItem => {
+              if (!existingNames.has(importedItem.name.toLowerCase())) {
+                state.householdEssentials.value.push({
+                  ...importedItem,
+                  id: Date.now() + Math.random().toString().slice(2) // Generate new ID
+                });
+                existingNames.add(importedItem.name.toLowerCase());
+              }
+            });
+          }
+          
+          // Merge kitchen inventory (avoid duplicates by name)
+          if (importedData.kitchenInventory && Array.isArray(importedData.kitchenInventory)) {
+            const existingNames = new Set(state.kitchenInventory.value.map(item => item.name.toLowerCase()));
+            
+            importedData.kitchenInventory.forEach(importedItem => {
+              if (!existingNames.has(importedItem.name.toLowerCase())) {
+                state.kitchenInventory.value.push({
+                  ...importedItem,
+                  id: Date.now() + Math.random().toString().slice(2) // Generate new ID
+                });
+                existingNames.add(importedItem.name.toLowerCase());
+              }
+            });
+          }
+        }
+        
+        // Save to local storage
+        saveToLocalStorage(state);
+        
+        // Regenerate shopping list
+        generateShoppingList();
+        
+        // Close the modal
+        state.showImportModal.value = false;
+        
+        // Reset file input
+        fileInput.value = '';
+        state.fileSelected.value = false;
+        
+      } catch (error) {
+        console.error('Import error:', error);
+        state.importError.value = `Error importing data: ${error.message}`;
+      }
+    };
+    
+    reader.onerror = function() {
+      state.importError.value = 'Error reading file';
+    };
+    
+    reader.readAsText(file);
+  }
+  
   return {
     getDayName,
     addIngredient,
@@ -563,6 +734,9 @@ export function setupMethods(state) {
     addItemToList,
     toggleItemCheck,
     confirmDeleteItem,
-    toggleDarkMode
+    toggleDarkMode,
+    exportData,
+    handleFileSelection,
+    importData
   };
 }

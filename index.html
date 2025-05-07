@@ -22,10 +22,20 @@
                     <img src="logo.png" alt="Meal Planner Pro">
                     <h1>Meal Planner Pro</h1>
                 </div>
-                <button @click="toggleDarkMode" class="theme-toggle">
-                    <i class="bi" :class="darkMode ? 'bi-sun' : 'bi-moon'"></i>
-                    {{ darkMode ? 'Light Mode' : 'Dark Mode' }}
-                </button>
+                <div class="header-actions">
+                    <div class="data-actions">
+                        <button @click="exportData" class="secondary-btn">
+                            <i class="bi bi-download"></i> Export Data
+                        </button>
+                        <button @click="showImportModal = true" class="secondary-btn">
+                            <i class="bi bi-upload"></i> Import Data
+                        </button>
+                    </div>
+                    <button @click="toggleDarkMode" class="theme-toggle">
+                        <i class="bi" :class="darkMode ? 'bi-sun' : 'bi-moon'"></i>
+                        {{ darkMode ? 'Light Mode' : 'Dark Mode' }}
+                    </button>
+                </div>
             </div>
             <nav>
                 <button :class="{ active: activeTab === 'menu' }" @click="activeTab = 'menu'">
@@ -567,6 +577,55 @@
                 <div class="modal-footer">
                     <button @click="showConfirmModal = false" class="secondary-btn">Cancel</button>
                     <button @click="confirmAction" class="primary-btn danger">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Data Modal -->
+        <div v-if="showImportModal" class="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>Import Data</h2>
+                    <button @click="showImportModal = false" class="icon-btn">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="import-options">
+                        <p>Please select a JSON file to import your Meal Planner data.</p>
+                        <input type="file" id="import-file" accept=".json" ref="fileInput" @change="handleFileSelection" class="file-input">
+                        
+                        <div v-if="fileSelected">
+                            <h3>Import Options</h3>
+                            <div class="import-option">
+                                <input type="radio" id="merge-option" v-model="importOption" value="merge">
+                                <label for="merge-option">
+                                    <strong>Merge with existing data</strong>
+                                    <span class="option-description">Adds new items while keeping your existing data. Duplicates will be avoided.</span>
+                                </label>
+                            </div>
+                            <div class="import-option">
+                                <input type="radio" id="override-option" v-model="importOption" value="override">
+                                <label for="override-option">
+                                    <strong>Override existing data</strong>
+                                    <span class="option-description">Replaces all your existing data with the imported data. This cannot be undone.</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div v-if="importError" class="error-message">
+                            {{ importError }}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="showImportModal = false" class="secondary-btn">Cancel</button>
+                    <button 
+                        @click="importData" 
+                        class="primary-btn" 
+                        :disabled="!fileSelected">
+                        Import
+                    </button>
                 </div>
             </div>
         </div>

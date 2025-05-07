@@ -63,6 +63,12 @@ export function AppState() {
   // Recipe categories
   const recipeCategories = ref(['Holiday', 'Breakfast', 'Lunch/Dinner', 'Dessert']);
   
+  // Import/Export state
+  const showImportModal = ref(false);
+  const importOption = ref('merge');
+  const fileSelected = ref(false);
+  const importError = ref('');
+  
   // Computed properties
   const filteredFavorites = computed(() => {
     let filtered = favorites.value;
@@ -145,6 +151,10 @@ export function AppState() {
     recipeCategories,
     filteredFavorites,
     filteredSelectorFavorites,
-    groupedShoppingItems
+    groupedShoppingItems,
+    showImportModal,
+    importOption,
+    fileSelected,
+    importError
   };
 }

@@ -837,3 +837,84 @@ button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* New styles for import/export functionality */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.data-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.file-input {
+  margin: 1rem 0;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--primary-light);
+}
+
+.import-options {
+  margin-bottom: 1rem;
+}
+
+.import-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--card-color);
+}
+
+.import-option input[type="radio"] {
+  margin-top: 0.25rem;
+}
+
+.import-option label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.option-description {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+  
+  .data-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .data-actions button {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .data-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .data-actions button {
+    width: 100%;
+  }
+}
