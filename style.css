@@ -503,7 +503,7 @@ main {
 }
 
 .ingredient-item .kitchen-highlight::after {
-  content: "In Kitchen";
+  content: attr(data-matched);
   position: absolute;
   top: -20px;
   left: 0;
@@ -515,10 +515,12 @@ main {
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 .ingredient-item .kitchen-highlight:hover::after {
   opacity: 1;
+  z-index: 10;
 }
 
 .ingredient-item .checked.kitchen-highlight {

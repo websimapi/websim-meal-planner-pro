@@ -302,7 +302,8 @@ export function setupMethods(state) {
                   category: ingredient.category,
                   checked: false,
                   count: 1,
-                  inKitchen: false
+                  inKitchen: false,
+                  matchedKeyword: ''
                 };
                 
                 itemMap[key] = item;
@@ -314,13 +315,19 @@ export function setupMethods(state) {
       });
     });
     
-    // Compare with kitchen inventory
+    // Compare with kitchen inventory using keyword matching
     state.kitchenInventory.value.forEach(kitchenItem => {
-      allItems.forEach(shoppingItem => {
-        if (kitchenItem.checked && shoppingItem.name.toLowerCase() === kitchenItem.name.toLowerCase()) {
-          shoppingItem.inKitchen = true;
-        }
-      });
+      if (kitchenItem.checked) {
+        const kitchenKeywords = extractKeywords(kitchenItem.name);
+        
+        allItems.forEach(shoppingItem => {
+          // Check if any keywords from kitchen item match in shopping item
+          if (hasMatchingKeywords(shoppingItem.name, kitchenKeywords)) {
+            shoppingItem.inKitchen = true;
+            shoppingItem.matchedKeyword = kitchenItem.name; // Store the matched kitchen item
+          }
+        });
+      }
     });
     
     // Sort by category and name
@@ -332,6 +339,32 @@ export function setupMethods(state) {
     });
     
     state.shoppingItems.value = allItems;
+  }
+  
+  // Helper function to extract keywords from an ingredient name
+  function extractKeywords(ingredientName) {
+    // Convert to lowercase and remove common units and quantities
+    const normalized = ingredientName.toLowerCase()
+      .replace(/\d+(\.\d+)?/g, '') // Remove numbers
+      .replace(/cup|cups|tbsp|tsp|tablespoon|teaspoon|ounce|oz|pound|lb|gram|g/g, '') // Remove units
+      .replace(/\(.*?\)/g, '') // Remove anything in parentheses
+      .trim();
+    
+    // Split into words, filtering out very short words and common stop words
+    const stopWords = ['and', 'or', 'the', 'with', 'of', 'a', 'an'];
+    const words = normalized.split(/\s+/)
+      .filter(word => word.length > 2) // Filter out very short words
+      .filter(word => !stopWords.includes(word)); // Filter out stop words
+    
+    return words;
+  }
+  
+  // Helper function to check if any keywords match
+  function hasMatchingKeywords(itemName, keywords) {
+    const normalizedName = itemName.toLowerCase();
+    
+    // Check if any keyword is contained in the item name
+    return keywords.some(keyword => normalizedName.includes(keyword));
   }
   
   function printShoppingList() {

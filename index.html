@@ -264,7 +264,8 @@
                                 <li v-for="item in items" :key="item.id" class="ingredient-item">
                                     <label :for="'item-'+item.id">
                                         <input type="checkbox" v-model="item.checked" :id="'item-'+item.id">
-                                        <span :class="{ 'checked': item.checked, 'kitchen-highlight': item.inKitchen }">
+                                        <span :class="{ 'checked': item.checked, 'kitchen-highlight': item.inKitchen }" 
+                                              :data-matched="item.inKitchen ? 'Found in kitchen: ' + item.matchedKeyword : ''">
                                             {{ item.name }} - {{ item.amount }}
                                         </span>
                                     </label>
