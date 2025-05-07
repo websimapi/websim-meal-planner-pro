@@ -57,12 +57,23 @@ export async function fetchRecipeFromUrl(url) {
  * @param {string} sourceUrl - The original URL for reference
  * @returns {Object} - The extracted recipe object
  */
-function parseRecipeFromHtml(html, sourceUrl) {
-  // Create a DOM parser
+async function parseRecipeFromHtml(html, sourceUrl) {
+  // First try to use LLM for parsing - most accurate method
+  try {
+    const llmParsedRecipe = await parseUsingLLM(html, sourceUrl);
+    if (llmParsedRecipe) {
+      return llmParsedRecipe;
+    }
+  } catch (error) {
+    console.warn('LLM parsing failed:', error);
+    // Continue with traditional parsing methods
+  }
+  
+  // Create a DOM parser for traditional methods
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   
-  // First try to find structured data (JSON-LD)
+  // Try to find structured data (JSON-LD)
   const structuredData = extractStructuredData(doc);
   if (structuredData) {
     return structuredData;
@@ -82,6 +93,103 @@ function parseRecipeFromHtml(html, sourceUrl) {
   
   // If all else fails, try to make a best guess
   return makeRecipeGuess(doc, sourceUrl);
+}
+
+/**
+ * Use LLM to parse recipe from HTML
+ * @param {string} html - The HTML content to parse
+ * @param {string} sourceUrl - The original URL for reference
+ * @returns {Object} - The parsed recipe object
+ */
+async function parseUsingLLM(html, sourceUrl) {
+  try {
+    // Limit HTML size to avoid overloading the LLM
+    const truncatedHtml = html.length > 50000 ? html.substring(0, 50000) + '...' : html;
+    
+    // Create domain context from the URL
+    const domain = new URL(sourceUrl).hostname;
+    
+    const completion = await websim.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `You are a specialized recipe extraction AI. Your task is to analyze HTML content from ${domain} and extract a complete recipe in a structured format. 
+          
+Respond directly with JSON, following this JSON schema, and no other text:
+{
+  "title": "Recipe title",
+  "description": "Brief description of the recipe",
+  "ingredients": [
+    {
+      "amount": "Quantity with units",
+      "name": "Ingredient name",
+      "category": "One of: Produce, Meat & Seafood, Dairy, Pantry, Frozen, Bakery, Other"
+    }
+  ],
+  "instructions": "Full preparation steps, formatted with line breaks and numbers if available"
+}
+
+If you cannot find a complete recipe, provide as much information as you can extract, using empty strings for missing fields. Make an educated guess about ingredient categories based on food type.`
+        },
+        {
+          role: "user",
+          content: [
+            { 
+              type: "text", 
+              text: `Extract the complete recipe from this HTML content from ${domain}:\n\n${truncatedHtml}`
+            }
+          ],
+        }
+      ],
+      json: true
+    });
+
+    // Parse the JSON response
+    let recipeData;
+    try {
+      recipeData = JSON.parse(completion.content);
+    } catch (error) {
+      console.error('Failed to parse LLM JSON response:', error);
+      throw new Error('Failed to parse recipe format');
+    }
+
+    // Validate and transform the response
+    if (!recipeData.title) {
+      throw new Error('LLM failed to extract a valid recipe title');
+    }
+
+    // Make sure ingredients is an array with proper structure
+    const ingredients = Array.isArray(recipeData.ingredients) 
+      ? recipeData.ingredients.map(ing => ({
+          amount: ing.amount || '',
+          name: ing.name || 'Unknown ingredient',
+          category: isValidCategory(ing.category) ? ing.category : determineCategory(ing.name)
+        }))
+      : [];
+
+    return {
+      title: recipeData.title,
+      description: recipeData.description || `Recipe from ${domain}`,
+      ingredients: ingredients,
+      steps: recipeData.instructions || '',
+      source: domain
+    };
+  } catch (error) {
+    console.error('LLM parsing error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if a category string is one of our valid categories
+ * @param {string} category - The category to check
+ * @returns {boolean} - Whether it's a valid category
+ */
+function isValidCategory(category) {
+  const validCategories = [
+    'Produce', 'Meat & Seafood', 'Dairy', 'Pantry', 'Frozen', 'Bakery', 'Other'
+  ];
+  return validCategories.includes(category);
 }
 
 /**
