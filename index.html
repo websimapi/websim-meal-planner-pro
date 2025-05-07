@@ -22,23 +22,10 @@
                     <img src="logo.png" alt="Meal Planner Pro">
                     <h1>Meal Planner Pro</h1>
                 </div>
-                <div class="settings-dropdown">
-                    <button @click="toggleSettingsMenu" class="settings-toggle">
-                        <i class="bi bi-gear-fill carrot-icon"></i>
-                    </button>
-                    <div v-if="showSettingsMenu" class="settings-menu">
-                        <button @click="toggleDarkMode" class="settings-item">
-                            <i class="bi" :class="darkMode ? 'bi-sun' : 'bi-moon'"></i>
-                            {{ darkMode ? 'Light Mode' : 'Dark Mode' }}
-                        </button>
-                        <button @click="exportData" class="settings-item">
-                            <i class="bi bi-download"></i> Export Data
-                        </button>
-                        <button @click="showImportModal = true; showSettingsMenu = false" class="settings-item">
-                            <i class="bi bi-upload"></i> Import Data
-                        </button>
-                    </div>
-                </div>
+                <button @click="toggleDarkMode" class="theme-toggle">
+                    <i class="bi" :class="darkMode ? 'bi-sun' : 'bi-moon'"></i>
+                    {{ darkMode ? 'Light Mode' : 'Dark Mode' }}
+                </button>
             </div>
             <nav>
                 <button :class="{ active: activeTab === 'menu' }" @click="activeTab = 'menu'">
@@ -63,26 +50,7 @@
             <!-- Menu Planner -->
             <section v-if="activeTab === 'menu'" class="menu-section">
                 <div class="section-header">
-                    <h2>Menu Planner</h2>
-                    <div class="menu-settings">
-                        <div class="menu-setting">
-                            <label for="week-start-day">Week Starts On:</label>
-                            <select id="week-start-day" v-model="weekStartDay" @change="changeWeekStartDay(weekStartDay)">
-                                <option v-for="option in getStartDayOptions()" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                        </div>
-                        <div class="menu-setting">
-                            <label for="number-of-weeks">Number of Weeks:</label>
-                            <select id="number-of-weeks" v-model="numberOfWeeks" @change="changeNumberOfWeeks(numberOfWeeks)">
-                                <option value="1">1 Week</option>
-                                <option value="2">2 Weeks</option>
-                                <option value="3">3 Weeks</option>
-                                <option value="4">4 Weeks</option>
-                            </select>
-                        </div>
-                    </div>
+                    <h2>Two-Week Menu Planner</h2>
                     <div class="menu-actions">
                         <button @click="autoFillMenu" class="primary-btn">
                             <i class="bi bi-magic"></i> Auto-Fill Menu
@@ -100,86 +68,29 @@
                             <div v-for="(day, dayIndex) in week" :key="'day'+dayIndex" class="day-card">
                                 <div class="day-header">
                                     <h4>{{ getDayName(dayIndex) }}</h4>
-                                    <button @click="clearDay(weekIndex, dayIndex, 'breakfast'); clearDay(weekIndex, dayIndex, 'lunch'); clearDay(weekIndex, dayIndex, 'dinner')" class="icon-btn">
+                                    <button @click="clearDay(weekIndex, dayIndex)" class="icon-btn">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                 </div>
-                                
-                                <!-- Breakfast -->
-                                <div class="meal-container">
-                                    <div class="meal-label">Breakfast:</div>
-                                    <div class="meals">
-                                        <div v-if="day.breakfast" class="meal-assigned">
-                                            <div class="recipe-info">
-                                                <h5>{{ day.breakfast.title }}</h5>
-                                                <p v-if="day.breakfast.description" class="meal-description">{{ day.breakfast.description }}</p>
-                                            </div>
-                                            <div class="meal-actions">
-                                                <button @click="viewRecipe(day.breakfast)" class="icon-btn">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button @click="clearDay(weekIndex, dayIndex, 'breakfast')" class="icon-btn">
-                                                    <i class="bi bi-x"></i>
-                                                </button>
-                                            </div>
+                                <div class="meals">
+                                    <div v-if="day.recipe" class="meal-assigned">
+                                        <div class="recipe-info">
+                                            <h5>{{ day.recipe.title }}</h5>
+                                            <p v-if="day.recipe.description" class="meal-description">{{ day.recipe.description }}</p>
                                         </div>
-                                        <div v-else class="add-meal">
-                                            <button @click="assignRecipe(weekIndex, dayIndex, 'breakfast')" class="small-btn">
-                                                <i class="bi bi-plus-circle"></i> Add Breakfast
+                                        <div class="meal-actions">
+                                            <button @click="viewRecipe(day.recipe)" class="icon-btn">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button @click="clearDay(weekIndex, dayIndex)" class="icon-btn">
+                                                <i class="bi bi-x"></i>
                                             </button>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <!-- Lunch -->
-                                <div class="meal-container">
-                                    <div class="meal-label">Lunch:</div>
-                                    <div class="meals">
-                                        <div v-if="day.lunch" class="meal-assigned">
-                                            <div class="recipe-info">
-                                                <h5>{{ day.lunch.title }}</h5>
-                                                <p v-if="day.lunch.description" class="meal-description">{{ day.lunch.description }}</p>
-                                            </div>
-                                            <div class="meal-actions">
-                                                <button @click="viewRecipe(day.lunch)" class="icon-btn">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button @click="clearDay(weekIndex, dayIndex, 'lunch')" class="icon-btn">
-                                                    <i class="bi bi-x"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div v-else class="add-meal">
-                                            <button @click="assignRecipe(weekIndex, dayIndex, 'lunch')" class="small-btn">
-                                                <i class="bi bi-plus-circle"></i> Add Lunch
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Dinner -->
-                                <div class="meal-container">
-                                    <div class="meal-label">Dinner:</div>
-                                    <div class="meals">
-                                        <div v-if="day.dinner" class="meal-assigned">
-                                            <div class="recipe-info">
-                                                <h5>{{ day.dinner.title }}</h5>
-                                                <p v-if="day.dinner.description" class="meal-description">{{ day.dinner.description }}</p>
-                                            </div>
-                                            <div class="meal-actions">
-                                                <button @click="viewRecipe(day.dinner)" class="icon-btn">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button @click="clearDay(weekIndex, dayIndex, 'dinner')" class="icon-btn">
-                                                    <i class="bi bi-x"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div v-else class="add-meal">
-                                            <button @click="assignRecipe(weekIndex, dayIndex, 'dinner')" class="small-btn">
-                                                <i class="bi bi-plus-circle"></i> Add Dinner
-                                            </button>
-                                        </div>
+                                    <div v-else class="add-meal">
+                                        <button @click="assignRecipe(weekIndex, dayIndex)" class="secondary-btn">
+                                            <i class="bi bi-plus-circle"></i> Add Meal
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -207,11 +118,6 @@
                         @click="categoryFilter = 'All'" 
                         :class="{ active: categoryFilter === 'All' }">
                         All
-                    </button>
-                    <button 
-                        @click="defaultFilter = !defaultFilter" 
-                        :class="{ active: defaultFilter }">
-                        Default
                     </button>
                     <button 
                         v-for="category in recipeCategories" 
@@ -296,10 +202,7 @@
                                 <li v-for="item in items" :key="item.id" class="ingredient-item">
                                     <label :for="'item-'+item.id">
                                         <input type="checkbox" v-model="item.checked" :id="'item-'+item.id">
-                                        <span :class="{ 'checked': item.checked, 'kitchen-highlight': item.inKitchen }" 
-                                              :data-matched="item.inKitchen ? 'Found in kitchen: ' + item.matchedKeyword : ''">
-                                            {{ item.name }} - {{ item.amount }}
-                                        </span>
+                                        <span :class="{ 'checked': item.checked }">{{ item.name }} - {{ item.amount }}</span>
                                     </label>
                                 </li>
                             </ul>
@@ -356,32 +259,16 @@
                     </div>
                 </div>
 
-                <div class="category-filters">
-                    <button 
-                        @click="kitchenCategoryFilter = 'All'" 
-                        :class="{ active: kitchenCategoryFilter === 'All' }">
-                        All
-                    </button>
-                    <button 
-                        v-for="category in kitchenCategories" 
-                        :key="category"
-                        @click="kitchenCategoryFilter = category" 
-                        :class="{ active: kitchenCategoryFilter === category }">
-                        {{ category }}
-                    </button>
-                </div>
-
                 <div class="checklist">
-                    <div v-if="Object.keys(groupedKitchenItems).length === 0" class="empty-state">
+                    <div v-if="kitchenInventory.length === 0" class="empty-state">
                         <i class="bi bi-cup-hot"></i>
-                        <p v-if="kitchenCategoryFilter !== 'All'">No items found in this category</p>
-                        <p v-else>Your kitchen inventory is empty. Add items to keep track of what you have in stock.</p>
+                        <p>Your kitchen inventory is empty. Add items to keep track of what you have in stock.</p>
                     </div>
                     <div v-else class="checklist-grid">
-                        <div v-for="(items, category) in groupedKitchenItems" :key="category" class="category">
-                            <h3>{{ category }}</h3>
+                        <div class="category">
+                            <h3>Inventory</h3>
                             <ul class="item-list">
-                                <li v-for="item in items" :key="item.id" class="checklist-item">
+                                <li v-for="item in kitchenInventory" :key="item.id" class="checklist-item">
                                     <label :for="'kitchen-'+item.id">
                                         <input type="checkbox" v-model="item.checked" :id="'kitchen-'+item.id" @change="toggleItemCheck(item, 'kitchen')">
                                         <span :class="{ 'checked': item.checked }">{{ item.name }}</span>
@@ -595,14 +482,6 @@
                         <label for="item-name">Item Name*</label>
                         <input type="text" id="item-name" v-model="newItemName" placeholder="Enter item name" required>
                     </div>
-                    <div class="form-group" v-if="selectedList === 'kitchen'">
-                        <label for="item-category">Category*</label>
-                        <select id="item-category" v-model="newItemCategory">
-                            <option v-for="category in kitchenCategories" :key="category" :value="category">
-                                {{ category }}
-                            </option>
-                        </select>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button @click="showAddItemModal = false" class="secondary-btn">Cancel</button>
@@ -623,55 +502,6 @@
                 <div class="modal-footer">
                     <button @click="showConfirmModal = false" class="secondary-btn">Cancel</button>
                     <button @click="confirmAction" class="primary-btn danger">Confirm</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Import Data Modal -->
-        <div v-if="showImportModal" class="modal-overlay">
-            <div class="modal">
-                <div class="modal-header">
-                    <h2>Import Data</h2>
-                    <button @click="showImportModal = false" class="icon-btn">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="import-options">
-                        <p>Please select a JSON file to import your Meal Planner data.</p>
-                        <input type="file" id="import-file" accept=".json" ref="fileInput" @change="handleFileSelection" class="file-input">
-                        
-                        <div v-if="fileSelected">
-                            <h3>Import Options</h3>
-                            <div class="import-option">
-                                <input type="radio" id="merge-option" v-model="importOption" value="merge">
-                                <label for="merge-option">
-                                    <strong>Merge with existing data</strong>
-                                    <span class="option-description">Adds new items while keeping your existing data. Duplicates will be avoided.</span>
-                                </label>
-                            </div>
-                            <div class="import-option">
-                                <input type="radio" id="override-option" v-model="importOption" value="override">
-                                <label for="override-option">
-                                    <strong>Override existing data</strong>
-                                    <span class="option-description">Replaces all your existing data with the imported data. This cannot be undone.</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div v-if="importError" class="error-message">
-                            {{ importError }}
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button @click="showImportModal = false" class="secondary-btn">Cancel</button>
-                    <button 
-                        @click="importData" 
-                        class="primary-btn" 
-                        :disabled="!fileSelected">
-                        Import
-                    </button>
                 </div>
             </div>
         </div>

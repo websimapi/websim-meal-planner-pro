@@ -14,7 +14,8 @@ export function setupMethods(state) {
       description: '',
       ingredients: [{ amount: '', name: '', category: 'Produce' }],
       instructions: '',
-      isDefault: false
+      isDefault: false,
+      category: 'Lunch/Dinner'
     };
     state.editingRecipe.value = false;
   }
@@ -53,7 +54,8 @@ export function setupMethods(state) {
       description: state.recipeForm.value.description.trim(),
       ingredients: state.recipeForm.value.ingredients.filter(i => i.name.trim()),
       instructions: state.recipeForm.value.instructions.trim(),
-      isDefault: state.recipeForm.value.isDefault
+      isDefault: state.recipeForm.value.isDefault,
+      category: state.recipeForm.value.category
     };
     
     if (state.editingRecipe.value) {
@@ -96,7 +98,8 @@ export function setupMethods(state) {
       description: recipe.description,
       ingredients: [...recipe.ingredients],
       instructions: recipe.instructions || recipe.steps || '',
-      isDefault: recipe.isDefault
+      isDefault: recipe.isDefault,
+      category: recipe.category || 'Lunch/Dinner'
     };
     state.editingRecipe.value = true;
     state.showAddRecipeModal.value = true;
@@ -347,7 +350,8 @@ export function setupMethods(state) {
         description: recipe.description || '',
         ingredients: recipe.ingredients.length > 0 ? recipe.ingredients : [{ amount: '', name: '', category: 'Produce' }],
         instructions: recipe.instructions || '',
-        isDefault: false
+        isDefault: false,
+        category: 'Lunch/Dinner'
       };
       
       // Show the edit form
@@ -364,6 +368,66 @@ export function setupMethods(state) {
       state.isLoading.value = false;
     }
   }
+  
+  // New Methods for Checklists
+  function addItemModal(listType) {
+    state.selectedList.value = listType;
+    state.newItemName.value = '';
+    state.showAddItemModal.value = true;
+  }
+  
+  function addItemToList() {
+    if (!state.newItemName.value.trim()) {
+      return;
+    }
+    
+    const newItem = {
+      id: Date.now().toString(),
+      name: state.newItemName.value.trim(),
+      checked: false
+    };
+    
+    if (state.selectedList.value === 'household') {
+      state.householdEssentials.value.push(newItem);
+    } else if (state.selectedList.value === 'kitchen') {
+      state.kitchenInventory.value.push(newItem);
+    }
+    
+    saveToLocalStorage(state);
+    state.showAddItemModal.value = false;
+  }
+  
+  function toggleItemCheck(item, listType) {
+    item.checked = !item.checked;
+    saveToLocalStorage(state);
+  }
+  
+  function confirmDeleteItem(item, listType) {
+    state.selectedItem = { item, listType };
+    state.confirmTitle.value = 'Delete Item';
+    state.confirmMessage.value = `Are you sure you want to delete "${item.name}"?`;
+    state.confirmAction.value = () => {
+      if (listType === 'household') {
+        state.householdEssentials.value = state.householdEssentials.value.filter(i => i.id !== item.id);
+      } else if (listType === 'kitchen') {
+        state.kitchenInventory.value = state.kitchenInventory.value.filter(i => i.id !== item.id);
+      }
+      saveToLocalStorage(state);
+      state.showConfirmModal.value = false;
+    };
+    state.showConfirmModal.value = true;
+  }
+  
+  function toggleDarkMode() {
+    state.darkMode.value = !state.darkMode.value;
+    localStorage.setItem('meal-planner-dark-mode', state.darkMode.value);
+    document.body.classList.toggle('dark-mode', state.darkMode.value);
+  }
+  
+  // Initialize dark mode on startup
+  onMounted(() => {
+    document.body.classList.toggle('dark-mode', state.darkMode.value);
+  });
   
   return {
     getDayName,
@@ -384,6 +448,11 @@ export function setupMethods(state) {
     generateShoppingList,
     printShoppingList,
     emailShoppingList,
-    fetchRecipeFromUrl: processFetchRecipeFromUrl
+    fetchRecipeFromUrl: processFetchRecipeFromUrl,
+    addItemModal,
+    addItemToList,
+    toggleItemCheck,
+    confirmDeleteItem,
+    toggleDarkMode
   };
 }

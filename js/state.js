@@ -10,18 +10,27 @@ export function AppState() {
   ]);
   const shoppingItems = ref([]);
   
+  // New checklist items
+  const householdEssentials = ref([]);
+  const kitchenInventory = ref([]);
+  
+  // Dark mode setting
+  const darkMode = ref(localStorage.getItem('meal-planner-dark-mode') === 'true');
+  
   // Recipe form
   const recipeForm = ref({
     title: '',
     description: '',
     ingredients: [{ amount: '', name: '', category: 'Produce' }],
     instructions: '',
-    isDefault: false
+    isDefault: false,
+    category: 'Lunch/Dinner' // Default category
   });
   
   // Search and filters
   const searchTerm = ref('');
   const selectorSearchTerm = ref('');
+  const categoryFilter = ref('All');
   
   // Modals control
   const showAddRecipeModal = ref(false);
@@ -29,6 +38,7 @@ export function AppState() {
   const showViewRecipeModal = ref(false);
   const showRecipeSelectorModal = ref(false);
   const showConfirmModal = ref(false);
+  const showAddItemModal = ref(false);
   
   // URL import
   const recipeUrl = ref('');
@@ -38,6 +48,8 @@ export function AppState() {
   // Selected items for operations
   const selectedRecipe = ref({});
   const selectedDay = ref({ week: 0, day: 0 });
+  const selectedList = ref('');
+  const newItemName = ref('');
   
   // Confirmation modal
   const confirmAction = ref(() => {});
@@ -47,15 +59,28 @@ export function AppState() {
   // Editing state
   const editingRecipe = ref(false);
   
+  // Recipe categories
+  const recipeCategories = ref(['Holiday', 'Breakfast', 'Lunch/Dinner', 'Dessert']);
+  
   // Computed properties
   const filteredFavorites = computed(() => {
-    if (!searchTerm.value) return favorites.value;
+    let filtered = favorites.value;
     
-    const term = searchTerm.value.toLowerCase();
-    return favorites.value.filter(recipe => {
-      return recipe.title.toLowerCase().includes(term) || 
-             recipe.description.toLowerCase().includes(term);
-    });
+    // Filter by search term
+    if (searchTerm.value) {
+      const term = searchTerm.value.toLowerCase();
+      filtered = filtered.filter(recipe => {
+        return recipe.title.toLowerCase().includes(term) || 
+               recipe.description.toLowerCase().includes(term);
+      });
+    }
+    
+    // Filter by category
+    if (categoryFilter.value !== 'All') {
+      filtered = filtered.filter(recipe => recipe.category === categoryFilter.value);
+    }
+    
+    return filtered;
   });
   
   const filteredSelectorFavorites = computed(() => {
@@ -86,23 +111,31 @@ export function AppState() {
     favorites,
     menuWeeks,
     shoppingItems,
+    householdEssentials,
+    kitchenInventory,
+    darkMode,
     recipeForm,
     searchTerm,
     selectorSearchTerm,
+    categoryFilter,
     showAddRecipeModal,
     showAddFromUrlModal,
     showViewRecipeModal,
     showRecipeSelectorModal,
     showConfirmModal,
+    showAddItemModal,
     recipeUrl,
     urlError,
     isLoading,
     selectedRecipe,
     selectedDay,
+    selectedList,
+    newItemName,
     confirmAction,
     confirmTitle,
     confirmMessage,
     editingRecipe,
+    recipeCategories,
     filteredFavorites,
     filteredSelectorFavorites,
     groupedShoppingItems
