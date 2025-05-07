@@ -408,11 +408,11 @@ export function setupMethods(state) {
   }
   
   function toggleItemCheck(item, listType) {
-    // Just toggle the checked status - the CSS will handle the strikethrough
-    item.checked = !item.checked;
+    // Don't toggle manually - v-model already handles this
+    // We just need to save the state and update shopping list if needed
     
-    // If this is kitchen inventory, we might need to refresh the shopping list
-    if (listType === 'kitchen' && state.activeTab.value === 'kitchen') {
+    // If this is kitchen inventory, refresh the shopping list to update highlighting
+    if (listType === 'kitchen') {
       generateShoppingList();
     }
     
