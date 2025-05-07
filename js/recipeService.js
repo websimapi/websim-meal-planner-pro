@@ -171,7 +171,7 @@ If you cannot find a complete recipe, provide as much information as you can ext
       title: recipeData.title,
       description: recipeData.description || `Recipe from ${domain}`,
       ingredients: ingredients,
-      steps: recipeData.instructions || '',
+      instructions: recipeData.instructions || '',
       source: domain
     };
   } catch (error) {
@@ -338,7 +338,10 @@ function extractFromCommonPatterns(doc, sourceUrl) {
     '.directions li',
     '.recipe-method li',
     '.wprm-recipe-instruction',
-    '.tasty-recipe-instructions li'
+    '.tasty-recipe-instructions li',
+    '.instructions li',
+    '.steps li',
+    '.method li'
   ];
   
   for (const selector of instructionSelectors) {
@@ -414,6 +417,23 @@ function makeRecipeGuess(doc, sourceUrl) {
         instructions = Array.from(nextOL.querySelectorAll('li'))
           .map((el, index) => `${index + 1}. ${el.textContent.trim()}`)
           .join('\n');
+      }
+    }
+  }
+  
+  // Also look for paragraphs that might contain instructions
+  if (!instructions) {
+    const instructionSections = doc.querySelectorAll('section, div');
+    for (const section of instructionSections) {
+      const heading = section.querySelector('h2, h3, h4');
+      if (heading && /instructions|directions|method|preparation|steps/i.test(heading.textContent)) {
+        const paragraphs = section.querySelectorAll('p');
+        if (paragraphs.length > 0) {
+          instructions = Array.from(paragraphs)
+            .map((p, index) => `${index + 1}. ${p.textContent.trim()}`)
+            .join('\n');
+          break;
+        }
       }
     }
   }

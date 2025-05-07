@@ -36,7 +36,7 @@ export function getSampleRecipes() {
         { amount: '1 lb', name: 'Spaghetti', category: 'Pantry' },
         { amount: '1/4 cup', name: 'Parmesan cheese, grated', category: 'Dairy' }
       ],
-      steps: '1. Brown the ground beef in a large pan over medium heat.\n2. Add onions and garlic, cook until softened.\n3. Stir in crushed tomatoes, tomato paste, and herbs.\n4. Simmer for 20 minutes, stirring occasionally.\n5. Meanwhile, cook spaghetti according to package directions.\n6. Drain pasta and serve topped with sauce and grated Parmesan.',
+      instructions: '1. Brown the ground beef in a large pan over medium heat.\n2. Add onions and garlic, cook until softened.\n3. Stir in crushed tomatoes, tomato paste, and herbs.\n4. Simmer for 20 minutes, stirring occasionally.\n5. Meanwhile, cook spaghetti according to package directions.\n6. Drain pasta and serve topped with sauce and grated Parmesan.',
       isDefault: true
     },
     {
@@ -52,7 +52,7 @@ export function getSampleRecipes() {
         { amount: '1 tbsp', name: 'Ginger, grated', category: 'Produce' },
         { amount: '2 cups', name: 'Rice, cooked', category: 'Pantry' }
       ],
-      steps: '1. Cook rice according to package directions.\n2. Heat oil in a wok or large skillet over high heat.\n3. Add chicken and stir fry until cooked through, about 5-6 minutes.\n4. Add vegetables, garlic, and ginger, stir fry for 3-4 minutes.\n5. Mix soy sauce and honey, then add to the pan.\n6. Stir to coat everything evenly and cook for another minute.\n7. Serve over cooked rice.',
+      instructions: '1. Cook rice according to package directions.\n2. Heat oil in a wok or large skillet over high heat.\n3. Add chicken and stir fry until cooked through, about 5-6 minutes.\n4. Add vegetables, garlic, and ginger, stir fry for 3-4 minutes.\n5. Mix soy sauce and honey, then add to the pan.\n6. Stir to coat everything evenly and cook for another minute.\n7. Serve over cooked rice.',
       isDefault: false
     },
     {
@@ -69,7 +69,7 @@ export function getSampleRecipes() {
         { amount: '2 tbsp', name: 'Red wine vinegar', category: 'Pantry' },
         { amount: '1 tsp', name: 'Dried oregano', category: 'Pantry' }
       ],
-      steps: '1. Combine cucumber, tomatoes, and red onion in a large bowl.\n2. Add olives and crumbled feta cheese.\n3. In a small bowl, whisk together olive oil, red wine vinegar, and oregano.\n4. Pour dressing over salad and toss gently to combine.\n5. Serve immediately or refrigerate for up to 1 hour before serving.',
+      instructions: '1. Combine cucumber, tomatoes, and red onion in a large bowl.\n2. Add olives and crumbled feta cheese.\n3. In a small bowl, whisk together olive oil, red wine vinegar, and oregano.\n4. Pour dressing over salad and toss gently to combine.\n5. Serve immediately or refrigerate for up to 1 hour before serving.',
       isDefault: false
     }
   ];

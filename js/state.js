@@ -15,7 +15,7 @@ export function AppState() {
     title: '',
     description: '',
     ingredients: [{ amount: '', name: '', category: 'Produce' }],
-    steps: '',
+    instructions: '',
     isDefault: false
   });
   

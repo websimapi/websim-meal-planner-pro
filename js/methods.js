@@ -13,7 +13,7 @@ export function setupMethods(state) {
       title: '',
       description: '',
       ingredients: [{ amount: '', name: '', category: 'Produce' }],
-      steps: '',
+      instructions: '',
       isDefault: false
     };
     state.editingRecipe.value = false;
@@ -42,8 +42,8 @@ export function setupMethods(state) {
       return;
     }
     
-    if (!state.recipeForm.value.steps.trim()) {
-      alert('Preparation steps are required');
+    if (!state.recipeForm.value.instructions.trim()) {
+      alert('Instructions are required');
       return;
     }
     
@@ -52,7 +52,7 @@ export function setupMethods(state) {
       title: state.recipeForm.value.title.trim(),
       description: state.recipeForm.value.description.trim(),
       ingredients: state.recipeForm.value.ingredients.filter(i => i.name.trim()),
-      steps: state.recipeForm.value.steps.trim(),
+      instructions: state.recipeForm.value.instructions.trim(),
       isDefault: state.recipeForm.value.isDefault
     };
     
@@ -95,7 +95,7 @@ export function setupMethods(state) {
       title: recipe.title,
       description: recipe.description,
       ingredients: [...recipe.ingredients],
-      steps: recipe.steps,
+      instructions: recipe.instructions || recipe.steps || '',
       isDefault: recipe.isDefault
     };
     state.editingRecipe.value = true;
@@ -346,7 +346,7 @@ export function setupMethods(state) {
         title: recipe.title,
         description: recipe.description || '',
         ingredients: recipe.ingredients.length > 0 ? recipe.ingredients : [{ amount: '', name: '', category: 'Produce' }],
-        steps: recipe.instructions || '',
+        instructions: recipe.instructions || '',
         isDefault: false
       };
       
