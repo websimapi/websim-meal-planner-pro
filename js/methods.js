@@ -478,8 +478,7 @@ export function setupMethods(state) {
   function addItemModal(listType) {
     state.selectedList.value = listType;
     state.newItemName.value = '';
-    // Set default category if it's kitchen item
-    state.newItemCategory = state.selectedList.value === 'kitchen' ? 'Pantry' : '';
+    state.newItemCategory.value = state.selectedList.value === 'kitchen' ? 'Pantry' : '';
     state.showAddItemModal.value = true;
   }
 
@@ -497,8 +496,7 @@ export function setupMethods(state) {
     if (state.selectedList.value === 'household') {
       state.householdEssentials.value.push(newItem);
     } else if (state.selectedList.value === 'kitchen') {
-      // Add category to kitchen items
-      newItem.category = state.newItemCategory || 'Other';
+      newItem.category = state.newItemCategory.value || 'Other';
       state.kitchenInventory.value.push(newItem);
     }
 
