@@ -10,6 +10,10 @@ export function AppState() {
   ]);
   const shoppingItems = ref([]);
   
+  // New menu settings
+  const weekStartDay = ref(0); // 0 = Monday, 1 = Tuesday, ... 6 = Sunday
+  const numberOfWeeks = ref(2); // Default is 2 weeks
+  
   // New checklist items
   const householdEssentials = ref([]);
   const kitchenInventory = ref([]);
@@ -152,6 +156,8 @@ export function AppState() {
     kitchenInventory,
     darkMode,
     recipeForm,
+    weekStartDay,
+    numberOfWeeks,
     searchTerm,
     selectorSearchTerm,
     categoryFilter,

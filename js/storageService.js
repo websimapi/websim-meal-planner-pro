@@ -3,6 +3,8 @@ export function saveToLocalStorage(state) {
   localStorage.setItem('meal-planner-menu', JSON.stringify(state.menuWeeks.value));
   localStorage.setItem('meal-planner-household', JSON.stringify(state.householdEssentials.value));
   localStorage.setItem('meal-planner-kitchen', JSON.stringify(state.kitchenInventory.value));
+  localStorage.setItem('meal-planner-week-start', state.weekStartDay.value.toString());
+  localStorage.setItem('meal-planner-num-weeks', state.numberOfWeeks.value.toString());
 }
 
 export function loadFromLocalStorage(state) {
@@ -10,6 +12,8 @@ export function loadFromLocalStorage(state) {
   const savedMenu = localStorage.getItem('meal-planner-menu');
   const savedHousehold = localStorage.getItem('meal-planner-household');
   const savedKitchen = localStorage.getItem('meal-planner-kitchen');
+  const savedWeekStart = localStorage.getItem('meal-planner-week-start');
+  const savedNumWeeks = localStorage.getItem('meal-planner-num-weeks');
   
   if (savedFavorites) {
     const recipes = JSON.parse(savedFavorites);
@@ -44,6 +48,47 @@ export function loadFromLocalStorage(state) {
   } else {
     // Default kitchen inventory
     state.kitchenInventory.value = getDefaultKitchenItems();
+  }
+  
+  // Load menu settings
+  if (savedWeekStart !== null) {
+    state.weekStartDay.value = parseInt(savedWeekStart);
+  }
+  
+  if (savedNumWeeks !== null) {
+    state.numberOfWeeks.value = parseInt(savedNumWeeks);
+    
+    // Adjust number of weeks if needed
+    adjustMenuWeeks(state);
+  }
+  
+  if (savedMenu) {
+    state.menuWeeks.value = JSON.parse(savedMenu);
+    
+    // Ensure we have the right number of weeks
+    adjustMenuWeeks(state);
+  }
+}
+
+// Helper function to adjust the number of weeks in the menu
+function adjustMenuWeeks(state) {
+  const currentWeeks = state.menuWeeks.value.length;
+  const targetWeeks = state.numberOfWeeks.value;
+  
+  if (currentWeeks === targetWeeks) {
+    return; // No adjustment needed
+  }
+  
+  if (currentWeeks < targetWeeks) {
+    // Add more weeks
+    for (let i = currentWeeks; i < targetWeeks; i++) {
+      state.menuWeeks.value.push(
+        Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
+      );
+    }
+  } else {
+    // Remove excess weeks
+    state.menuWeeks.value = state.menuWeeks.value.slice(0, targetWeeks);
   }
 }
 

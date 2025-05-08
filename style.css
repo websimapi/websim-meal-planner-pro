@@ -919,3 +919,50 @@ button:disabled {
 .header-actions, .data-actions {
   display: none;
 }
+
+/* Menu Settings */
+.menu-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.menu-setting {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.menu-setting label {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.menu-setting select {
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  background-color: var(--card-color);
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustment for menu settings */
+@media (max-width: 768px) {
+  .menu-settings {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  
+  .menu-setting {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .menu-setting select {
+    flex: 1;
+  }
+}

@@ -64,6 +64,25 @@
             <section v-if="activeTab === 'menu'" class="menu-section">
                 <div class="section-header">
                     <h2>Two-Week Menu Planner</h2>
+                    <div class="menu-settings">
+                        <div class="menu-setting">
+                            <label for="week-start-day">Week Starts On:</label>
+                            <select id="week-start-day" v-model="weekStartDay" @change="changeWeekStartDay(weekStartDay)">
+                                <option v-for="option in getStartDayOptions()" :key="option.value" :value="option.value">
+                                    {{ option.label }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="menu-setting">
+                            <label for="number-of-weeks">Number of Weeks:</label>
+                            <select id="number-of-weeks" v-model="numberOfWeeks" @change="changeNumberOfWeeks(numberOfWeeks)">
+                                <option value="1">1 Week</option>
+                                <option value="2">2 Weeks</option>
+                                <option value="3">3 Weeks</option>
+                                <option value="4">4 Weeks</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="menu-actions">
                         <button @click="autoFillMenu" class="primary-btn">
                             <i class="bi bi-magic"></i> Auto-Fill Menu
