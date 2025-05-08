@@ -476,9 +476,11 @@ export function setupMethods(state) {
   function addItemModal(listType) {
     state.selectedList.value = listType;
     state.newItemName.value = '';
+    // Set default category if it's kitchen item
+    state.newItemCategory = state.selectedList.value === 'kitchen' ? 'Pantry' : '';
     state.showAddItemModal.value = true;
   }
-  
+
   function addItemToList() {
     if (!state.newItemName.value.trim()) {
       return;
@@ -493,13 +495,15 @@ export function setupMethods(state) {
     if (state.selectedList.value === 'household') {
       state.householdEssentials.value.push(newItem);
     } else if (state.selectedList.value === 'kitchen') {
+      // Add category to kitchen items
+      newItem.category = state.newItemCategory || 'Other';
       state.kitchenInventory.value.push(newItem);
     }
     
     saveToLocalStorage(state);
     state.showAddItemModal.value = false;
   }
-  
+
   function toggleItemCheck(item, listType) {
     // Don't toggle manually - v-model already handles this
     // We just need to save the state and update shopping list if needed

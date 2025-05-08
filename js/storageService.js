@@ -35,7 +35,12 @@ export function loadFromLocalStorage(state) {
   }
   
   if (savedKitchen) {
-    state.kitchenInventory.value = JSON.parse(savedKitchen);
+    const kitchenItems = JSON.parse(savedKitchen);
+    // Ensure all kitchen items have a category
+    state.kitchenInventory.value = kitchenItems.map(item => ({
+      ...item,
+      category: item.category || 'Other'
+    }));
   } else {
     // Default kitchen inventory
     state.kitchenInventory.value = getDefaultKitchenItems();
@@ -172,13 +177,21 @@ function getDefaultHouseholdItems() {
 
 function getDefaultKitchenItems() {
   return [
-    { id: 'k1', name: 'Salt', checked: false },
-    { id: 'k2', name: 'Pepper', checked: false },
-    { id: 'k3', name: 'Olive oil', checked: false },
-    { id: 'k4', name: 'Flour', checked: false },
-    { id: 'k5', name: 'Sugar', checked: false },
-    { id: 'k6', name: 'Rice', checked: false },
-    { id: 'k7', name: 'Pasta', checked: false },
-    { id: 'k8', name: 'Canned tomatoes', checked: false }
+    { id: 'k1', name: 'Salt', checked: false, category: 'Spices' },
+    { id: 'k2', name: 'Pepper', checked: false, category: 'Spices' },
+    { id: 'k3', name: 'Olive oil', checked: false, category: 'Pantry' },
+    { id: 'k4', name: 'Flour', checked: false, category: 'Pantry' },
+    { id: 'k5', name: 'Sugar', checked: false, category: 'Pantry' },
+    { id: 'k6', name: 'Rice', checked: false, category: 'Pantry' },
+    { id: 'k7', name: 'Pasta', checked: false, category: 'Pantry' },
+    { id: 'k8', name: 'Canned tomatoes', checked: false, category: 'Pantry' },
+    { id: 'k9', name: 'Milk', checked: false, category: 'Dairy' },
+    { id: 'k10', name: 'Eggs', checked: false, category: 'Dairy' },
+    { id: 'k11', name: 'Cheese', checked: false, category: 'Dairy' },
+    { id: 'k12', name: 'Butter', checked: false, category: 'Dairy' },
+    { id: 'k13', name: 'Onions', checked: false, category: 'Produce' },
+    { id: 'k14', name: 'Garlic', checked: false, category: 'Produce' },
+    { id: 'k15', name: 'Frozen vegetables', checked: false, category: 'Frozen' },
+    { id: 'k16', name: 'Bread', checked: false, category: 'Bakery' }
   ];
 }

@@ -51,6 +51,7 @@ export function AppState() {
   const selectedDay = ref({ week: 0, day: 0, mealType: 'dinner' });
   const selectedList = ref('');
   const newItemName = ref('');
+  const newItemCategory = ref('Pantry');
   
   // Confirmation modal
   const confirmAction = ref(() => {});
@@ -62,6 +63,10 @@ export function AppState() {
   
   // Recipe categories
   const recipeCategories = ref(['Holiday', 'Breakfast', 'Lunch/Dinner', 'Dessert']);
+  
+  // Kitchen categories
+  const kitchenCategories = ref(['Produce', 'Dairy', 'Meat & Seafood', 'Pantry', 'Frozen', 'Bakery', 'Spices', 'Other']);
+  const kitchenCategoryFilter = ref('All');
   
   // Import/Export state
   const showImportModal = ref(false);
@@ -121,6 +126,23 @@ export function AppState() {
     return grouped;
   });
   
+  const groupedKitchenItems = computed(() => {
+    const filtered = kitchenCategoryFilter.value === 'All' 
+      ? kitchenInventory.value 
+      : kitchenInventory.value.filter(item => item.category === kitchenCategoryFilter.value);
+    
+    const grouped = {};
+    
+    filtered.forEach(item => {
+      if (!grouped[item.category]) {
+        grouped[item.category] = [];
+      }
+      grouped[item.category].push(item);
+    });
+    
+    return grouped;
+  });
+  
   return {
     activeTab,
     favorites,
@@ -147,14 +169,18 @@ export function AppState() {
     selectedDay,
     selectedList,
     newItemName,
+    newItemCategory,
     confirmAction,
     confirmTitle,
     confirmMessage,
     editingRecipe,
     recipeCategories,
+    kitchenCategories,
+    kitchenCategoryFilter,
     filteredFavorites,
     filteredSelectorFavorites,
     groupedShoppingItems,
+    groupedKitchenItems,
     showImportModal,
     importOption,
     fileSelected,
