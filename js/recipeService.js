@@ -187,7 +187,7 @@ If you cannot find a complete recipe, provide as much information as you can ext
  */
 function isValidCategory(category) {
   const validCategories = [
-    'Produce', 'Meat & Seafood', 'Dairy', 'Pantry', 'Frozen', 'Bakery', 'Other'
+    'Produce', 'Meat & Seafood', 'Dairy & Cold Food', 'Pantry', 'Frozen', 'Bakery', 'Other'
   ];
   return validCategories.includes(category);
 }
@@ -492,7 +492,7 @@ function determineCategory(ingredient) {
   const categories = {
     'Produce': ['vegetable', 'fruit', 'onion', 'garlic', 'potato', 'tomato', 'carrot', 'lettuce', 'spinach', 'apple', 'banana', 'berry', 'lemon', 'lime', 'herb', 'cilantro', 'parsley', 'basil'],
     'Meat & Seafood': ['meat', 'beef', 'chicken', 'pork', 'lamb', 'steak', 'fish', 'seafood', 'shrimp', 'salmon', 'tuna', 'bacon', 'sausage', 'ground'],
-    'Dairy': ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'sour cream', 'cottage cheese', 'mozzarella', 'cheddar', 'parmesan', 'egg'],
+    'Dairy & Cold Food': ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'sour cream', 'cottage cheese', 'mozzarella', 'cheddar', 'parmesan', 'egg'],
     'Pantry': ['salt', 'pepper', 'oil', 'vinegar', 'spice', 'sugar', 'flour', 'rice', 'pasta', 'sauce', 'canned', 'broth', 'stock', 'honey', 'syrup', 'soy sauce', 'condiment'],
     'Frozen': ['frozen', 'ice cream'],
     'Bakery': ['bread', 'roll', 'bun', 'bagel', 'cake', 'cookie', 'pastry', 'pie']

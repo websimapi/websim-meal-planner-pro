@@ -69,7 +69,7 @@ export function AppState() {
   const recipeCategories = ref(['Holiday', 'Breakfast', 'Lunch/Dinner', 'Dessert']);
   
   // Kitchen categories
-  const kitchenCategories = ref(['Produce', 'Dairy', 'Meat & Seafood', 'Pantry', 'Frozen', 'Bakery', 'Spices', 'Other']);
+  const kitchenCategories = ref(['Produce', 'Dairy & Cold Food', 'Meat & Seafood', 'Pantry', 'Frozen', 'Bakery', 'Spices', 'Other']);
   const kitchenCategoryFilter = ref('All');
   
   // Import/Export state
