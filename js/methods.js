@@ -290,20 +290,47 @@ export function setupMethods(state) {
         for (const mealType of ['breakfast', 'lunch', 'dinner']) {
           if (day[mealType] && day[mealType].ingredients) {
             day[mealType].ingredients.forEach(ingredient => {
+              // Skip ingredients with empty names
+              if (!ingredient.name.trim()) return;
+              
               const key = `${ingredient.name.toLowerCase()}_${ingredient.category}`;
+              const amount = ingredient.amount.trim();
 
               if (itemMap[key]) {
-                // Already have this item, merge
-                itemMap[key].count++;
+                // Already have this item
+                const existingItem = itemMap[key];
+                
+                // Track quantity for this occurrence
+                if (amount) {
+                  // Check if we already have this exact quantity
+                  const existingAmountIndex = existingItem.amounts.findIndex(a => a.text === amount);
+                  
+                  if (existingAmountIndex >= 0) {
+                    // Increment count for this amount
+                    existingItem.amounts[existingAmountIndex].count++;
+                  } else {
+                    // Add new amount
+                    existingItem.amounts.push({ text: amount, count: 1 });
+                  }
+                }
+                
+                // Update the displayed amount
+                existingItem.amount = formatAmounts(existingItem.amounts);
+                
+                // Increment overall count
+                existingItem.count++;
               } else {
                 // New item
+                const amounts = amount ? [{ text: amount, count: 1 }] : [];
+                
                 const item = {
                   id: Date.now() + Math.random().toString().slice(2),
                   name: ingredient.name,
-                  amount: ingredient.amount,
+                  amount: amount,
                   category: ingredient.category,
                   checked: false,
                   count: 1,
+                  amounts: amounts, // Track amounts and their counts
                   inKitchen: false,
                   matchedKeyword: ''
                 };
@@ -314,7 +341,7 @@ export function setupMethods(state) {
             });
           }
         }
-      });
+      }
     });
 
     // Compare with kitchen inventory using keyword matching
@@ -341,6 +368,21 @@ export function setupMethods(state) {
     });
 
     state.shoppingItems.value = allItems;
+  }
+
+  // Helper function to format combined amounts
+  function formatAmounts(amounts) {
+    if (!amounts || amounts.length === 0) {
+      return '';
+    }
+    
+    return amounts.map(a => {
+      if (a.count === 1) {
+        return a.text;
+      } else {
+        return `${a.count} × ${a.text}`;
+      }
+    }).join(' + ');
   }
 
   // Helper function to extract keywords from an ingredient name
@@ -727,7 +769,7 @@ export function setupMethods(state) {
 
           // Merge household essentials (avoid duplicates by name)
           if (importedData.householdEssentials && Array.isArray(importedData.householdEssentials)) {
-            const existingNames = new Set(state.householdEssentials.value.map(item => item.name.toLowerCase()));
+            const existingNames = new Set(state.householdEssentials.value.map(item => item.name.toLowerCase));
 
             importedData.householdEssentials.forEach(importedItem => {
               if (!existingNames.has(importedItem.name.toLowerCase())) {
@@ -742,7 +784,7 @@ export function setupMethods(state) {
 
           // Merge kitchen inventory (avoid duplicates by name)
           if (importedData.kitchenInventory && Array.isArray(importedData.kitchenInventory)) {
-            const existingNames = new Set(state.kitchenInventory.value.map(item => item.name.toLowerCase()));
+            const existingNames = new Set(state.kitchenInventory.value.map(item => item.name.toLowerCase));
 
             importedData.kitchenInventory.forEach(importedItem => {
               if (!existingNames.has(importedItem.name.toLowerCase())) {
