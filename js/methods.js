@@ -71,8 +71,12 @@ export function setupMethods(state) {
       state.menuWeeks.value.forEach(week => {
         week.forEach(day => {
           for (const mealType of ['breakfast', 'lunch', 'dinner']) {
-            if (day[mealType] && day[mealType].id === recipeData.id) {
-              day[mealType] = recipeData;
+            if (day[mealType] && day[mealType].length > 0) {
+              for (let i = 0; i < day[mealType].length; i++) {
+                if (day[mealType][i].id === recipeData.id) {
+                  day[mealType][i] = recipeData;
+                }
+              }
             }
           }
         });
@@ -132,14 +136,10 @@ export function setupMethods(state) {
     // Remove from menu
     state.menuWeeks.value.forEach(week => {
       week.forEach(day => {
-        if (day.breakfast && day.breakfast.id === recipeId) {
-          day.breakfast = null;
-        }
-        if (day.lunch && day.lunch.id === recipeId) {
-          day.lunch = null;
-        }
-        if (day.dinner && day.dinner.id === recipeId) {
-          day.dinner = null;
+        for (const mealType of ['breakfast', 'lunch', 'dinner']) {
+          if (day[mealType] && day[mealType].length > 0) {
+            day[mealType] = day[mealType].filter(r => r.id !== recipeId);
+          }
         }
       });
     });
@@ -163,13 +163,22 @@ export function setupMethods(state) {
   }
 
   function selectRecipeForMenu(recipe) {
-    state.menuWeeks.value[state.selectedDay.value.week][state.selectedDay.value.day][state.selectedDay.value.mealType] = recipe;
+    const { week, day, mealType } = state.selectedDay.value;
+    if (!state.menuWeeks.value[week][day][mealType]) {
+      state.menuWeeks.value[week][day][mealType] = [];
+    }
+    state.menuWeeks.value[week][day][mealType].push(recipe);
     state.showRecipeSelectorModal.value = false;
     saveToLocalStorage(state);
   }
 
+  function removeRecipeFromMenu(weekIndex, dayIndex, mealType, recipeIndex) {
+    state.menuWeeks.value[weekIndex][dayIndex][mealType].splice(recipeIndex, 1);
+    saveToLocalStorage(state);
+  }
+
   function clearDay(weekIndex, dayIndex, mealType) {
-    state.menuWeeks.value[weekIndex][dayIndex][mealType] = null;
+    state.menuWeeks.value[weekIndex][dayIndex][mealType] = [];
     saveToLocalStorage(state);
   }
 
@@ -177,10 +186,9 @@ export function setupMethods(state) {
     state.confirmTitle.value = 'Clear Menu';
     state.confirmMessage.value = 'Are you sure you want to clear the entire menu? This will remove all planned meals.';
     state.confirmAction.value = () => {
-      state.menuWeeks.value = [
-        Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null })),
-        Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
-      ];
+      state.menuWeeks.value = Array(state.numberOfWeeks.value).fill().map(() => 
+        Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] }))
+      );
       saveToLocalStorage(state);
       state.showConfirmModal.value = false;
     };
@@ -216,13 +224,11 @@ export function setupMethods(state) {
             mealType = 'dinner';
           } else {
             // Lunch/Dinner and Holiday can go in lunch or dinner
-            mealType = !newMenu[w][d].lunch ? 'lunch' : 'dinner';
+            mealType = Math.random() > 0.5 ? 'lunch' : 'dinner';
           }
 
-          if (!newMenu[w][d][mealType]) {
-            newMenu[w][d][mealType] = recipe;
-            placed = true;
-          }
+          newMenu[w][d][mealType].push(recipe);
+          placed = true;
         }
       }
 
@@ -231,8 +237,8 @@ export function setupMethods(state) {
         for (let w = 0; w < newMenu.length && !placed; w++) {
           for (let d = 0; d < newMenu[w].length && !placed; d++) {
             for (const mealType of ['breakfast', 'lunch', 'dinner']) {
-              if (!newMenu[w][d][mealType]) {
-                newMenu[w][d][mealType] = recipe;
+              if (newMenu[w][d][mealType].length === 0) {
+                newMenu[w][d][mealType].push(recipe);
                 placed = true;
                 break;
               }
@@ -246,29 +252,29 @@ export function setupMethods(state) {
     for (let w = 0; w < newMenu.length; w++) {
       for (let d = 0; d < newMenu[w].length; d++) {
         // Fill breakfast
-        if (!newMenu[w][d].breakfast && breakfastRecipes.length > 0) {
+        if (newMenu[w][d].breakfast.length === 0 && breakfastRecipes.length > 0) {
           const randomIndex = Math.floor(Math.random() * breakfastRecipes.length);
-          newMenu[w][d].breakfast = breakfastRecipes[randomIndex];
+          newMenu[w][d].breakfast.push(breakfastRecipes[randomIndex]);
           breakfastRecipes.splice(randomIndex, 1);
         }
 
         // Fill lunch
-        if (!newMenu[w][d].lunch && lunchDinnerRecipes.length > 0) {
+        if (newMenu[w][d].lunch.length === 0 && lunchDinnerRecipes.length > 0) {
           const randomIndex = Math.floor(Math.random() * lunchDinnerRecipes.length);
-          newMenu[w][d].lunch = lunchDinnerRecipes[randomIndex];
+          newMenu[w][d].lunch.push(lunchDinnerRecipes[randomIndex]);
           lunchDinnerRecipes.splice(randomIndex, 1);
         }
 
         // Fill dinner - try to add a dessert occasionally
-        if (!newMenu[w][d].dinner) {
+        if (newMenu[w][d].dinner.length === 0) {
           if (Math.random() > 0.7 && dessertRecipes.length > 0) {
             // 30% chance of dessert
             const randomIndex = Math.floor(Math.random() * dessertRecipes.length);
-            newMenu[w][d].dinner = dessertRecipes[randomIndex];
+            newMenu[w][d].dinner.push(dessertRecipes[randomIndex]);
             dessertRecipes.splice(randomIndex, 1);
           } else if (lunchDinnerRecipes.length > 0) {
             const randomIndex = Math.floor(Math.random() * lunchDinnerRecipes.length);
-            newMenu[w][d].dinner = lunchDinnerRecipes[randomIndex];
+            newMenu[w][d].dinner.push(lunchDinnerRecipes[randomIndex]);
             lunchDinnerRecipes.splice(randomIndex, 1);
           }
         }
@@ -288,60 +294,37 @@ export function setupMethods(state) {
       week.forEach(day => {
         // Process breakfast, lunch, and dinner recipes
         for (const mealType of ['breakfast', 'lunch', 'dinner']) {
-          if (day[mealType] && day[mealType].ingredients) {
-            day[mealType].ingredients.forEach(ingredient => {
-              // Skip ingredients with empty names
-              if (!ingredient.name.trim()) return;
-              
-              const key = `${ingredient.name.toLowerCase()}_${ingredient.category}`;
-              const amount = ingredient.amount.trim();
+          if (day[mealType] && day[mealType].length > 0) {
+            day[mealType].forEach(recipe => {
+              if (recipe && recipe.ingredients) {
+                recipe.ingredients.forEach(ingredient => {
+                  const key = `${ingredient.name.toLowerCase()}_${ingredient.category}`;
 
-              if (itemMap[key]) {
-                // Already have this item
-                const existingItem = itemMap[key];
-                
-                // Track quantity for this occurrence
-                if (amount) {
-                  // Check if we already have this exact quantity
-                  const existingAmountIndex = existingItem.amounts.findIndex(a => a.text === amount);
-                  
-                  if (existingAmountIndex >= 0) {
-                    // Increment count for this amount
-                    existingItem.amounts[existingAmountIndex].count++;
+                  if (itemMap[key]) {
+                    // Already have this item, merge
+                    itemMap[key].count++;
                   } else {
-                    // Add new amount
-                    existingItem.amounts.push({ text: amount, count: 1 });
-                  }
-                }
-                
-                // Update the displayed amount
-                existingItem.amount = formatAmounts(existingItem.amounts);
-                
-                // Increment overall count
-                existingItem.count++;
-              } else {
-                // New item
-                const amounts = amount ? [{ text: amount, count: 1 }] : [];
-                
-                const item = {
-                  id: Date.now() + Math.random().toString().slice(2),
-                  name: ingredient.name,
-                  amount: amount,
-                  category: ingredient.category,
-                  checked: false,
-                  count: 1,
-                  amounts: amounts, // Track amounts and their counts
-                  inKitchen: false,
-                  matchedKeyword: ''
-                };
+                    // New item
+                    const item = {
+                      id: Date.now() + Math.random().toString().slice(2),
+                      name: ingredient.name,
+                      amount: ingredient.amount,
+                      category: ingredient.category,
+                      checked: false,
+                      count: 1,
+                      inKitchen: false,
+                      matchedKeyword: ''
+                    };
 
-                itemMap[key] = item;
-                allItems.push(item);
+                    itemMap[key] = item;
+                    allItems.push(item);
+                  }
+                });
               }
             });
           }
         }
-      }
+      });
     });
 
     // Compare with kitchen inventory using keyword matching
@@ -368,21 +351,6 @@ export function setupMethods(state) {
     });
 
     state.shoppingItems.value = allItems;
-  }
-
-  // Helper function to format combined amounts
-  function formatAmounts(amounts) {
-    if (!amounts || amounts.length === 0) {
-      return '';
-    }
-    
-    return amounts.map(a => {
-      if (a.count === 1) {
-        return a.text;
-      } else {
-        return `${a.count} × ${a.text}`;
-      }
-    }).join(' + ');
   }
 
   // Helper function to extract keywords from an ingredient name
@@ -602,7 +570,7 @@ export function setupMethods(state) {
       // Add more weeks
       for (let i = currentWeeks; i < num; i++) {
         state.menuWeeks.value.push(
-          Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
+          Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] }))
         );
       }
     } else if (currentWeeks > num) {
@@ -613,7 +581,7 @@ export function setupMethods(state) {
       let hasPlannedMeals = false;
       for (let i = currentWeeks - weeksToRemove; i < currentWeeks; i++) {
         for (const day of state.menuWeeks.value[i]) {
-          if (day.breakfast || day.lunch || day.dinner) {
+          if (day.breakfast.length > 0 || day.lunch.length > 0 || day.dinner.length > 0) {
             hasPlannedMeals = true;
             break;
           }
@@ -717,8 +685,8 @@ export function setupMethods(state) {
           // Override - Replace all existing data
           state.favorites.value = importedData.favorites || [];
           state.menuWeeks.value = importedData.menuWeeks || [
-            Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null })),
-            Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
+            Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] })),
+            Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] }))
           ];
           state.householdEssentials.value = importedData.householdEssentials || [];
           state.kitchenInventory.value = importedData.kitchenInventory || [];
@@ -752,13 +720,13 @@ export function setupMethods(state) {
                 week.forEach((day, dayIndex) => {
                   // Only add meals if the slot is empty
                   if (dayIndex < state.menuWeeks.value[weekIndex].length) {
-                    if (!state.menuWeeks.value[weekIndex][dayIndex].breakfast && day.breakfast) {
+                    if (state.menuWeeks.value[weekIndex][dayIndex].breakfast.length === 0 && day.breakfast) {
                       state.menuWeeks.value[weekIndex][dayIndex].breakfast = day.breakfast;
                     }
-                    if (!state.menuWeeks.value[weekIndex][dayIndex].lunch && day.lunch) {
+                    if (state.menuWeeks.value[weekIndex][dayIndex].lunch.length === 0 && day.lunch) {
                       state.menuWeeks.value[weekIndex][dayIndex].lunch = day.lunch;
                     }
-                    if (!state.menuWeeks.value[weekIndex][dayIndex].dinner && day.dinner) {
+                    if (state.menuWeeks.value[weekIndex][dayIndex].dinner.length === 0 && day.dinner) {
                       state.menuWeeks.value[weekIndex][dayIndex].dinner = day.dinner;
                     }
                   }
@@ -850,6 +818,7 @@ export function setupMethods(state) {
     toggleDefault,
     assignRecipe,
     selectRecipeForMenu,
+    removeRecipeFromMenu,
     clearDay,
     clearMenu,
     autoFillMenu,

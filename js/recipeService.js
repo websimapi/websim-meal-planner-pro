@@ -109,13 +109,27 @@ async function parseUsingLLM(html, sourceUrl) {
     // Create domain context from the URL
     const domain = new URL(sourceUrl).hostname;
     
-    const systemPrompt = "You are a specialized recipe extraction AI. Your task is to analyze HTML content and extract a complete recipe in a structured format. Respond with JSON only.";
-    
     const completion = await websim.chat.completions.create({
       messages: [
         {
           role: "system",
-          content: systemPrompt
+          content: `You are a specialized recipe extraction AI. Your task is to analyze HTML content from ${domain} and extract a complete recipe in a structured format. 
+          
+Respond directly with JSON, following this JSON schema, and no other text:
+{
+  "title": "Recipe title",
+  "description": "Brief description of the recipe",
+  "ingredients": [
+    {
+      "amount": "Quantity with units",
+      "name": "Ingredient name",
+      "category": "One of: Produce, Meat & Seafood, Dairy, Pantry, Frozen, Bakery, Other"
+    }
+  ],
+  "instructions": "Full preparation steps, formatted with line breaks and numbers if available"
+}
+
+If you cannot find a complete recipe, provide as much information as you can extract, using empty strings for missing fields. Make an educated guess about ingredient categories based on food type.`
         },
         {
           role: "user",
@@ -124,7 +138,7 @@ async function parseUsingLLM(html, sourceUrl) {
               type: "text", 
               text: `Extract the complete recipe from this HTML content from ${domain}:\n\n${truncatedHtml}`
             }
-          ]
+          ],
         }
       ],
       json: true
