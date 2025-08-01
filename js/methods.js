@@ -836,10 +836,37 @@ app.use(cors({
 // Parse JSON bodies
 app.use(express.json({ limit: '10mb' }));
 
-// Request logging middleware
+// Enhanced request logging middleware with better IP detection
 app.use((req, res, next) => {
   const timestamp = new Date().toLocaleString();
-  console.log(\`[\${timestamp}] \${req.method} \${req.url} - Client: \${req.ip || req.connection.remoteAddress}\`);
+  
+  // Try to get the most accurate client IP
+  const clientIP = req.headers['x-forwarded-for'] || 
+                   req.headers['x-real-ip'] || 
+                   req.connection.remoteAddress || 
+                   req.ip || 'unknown';
+  
+  // Clean up IPv6-mapped IPv4 addresses
+  const cleanIP = clientIP.replace(/^::ffff:/, '');
+  
+  // Get user agent for additional context
+  const userAgent = req.headers['user-agent'] || 'Unknown';
+  const deviceInfo = userAgent.includes('Mobile') ? '📱 Mobile' : '💻 Desktop';
+  
+  console.log(\`[\${timestamp}] \${req.method} \${req.url}\`);
+  console.log(\`   🌐 Client IP: \${cleanIP}\`);
+  console.log(\`   \${deviceInfo} User-Agent: \${userAgent.substring(0, 80)}...\`);
+  
+  // Log additional connection details for debugging
+  if (req.headers['x-forwarded-for']) {
+    console.log(\`   🔀 X-Forwarded-For: \${req.headers['x-forwarded-for']}\`);
+  }
+  if (req.headers['host']) {
+    console.log(\`   🏠 Host Header: \${req.headers['host']}\`);
+  }
+  console.log(\`   ➡️  Raw Remote Address: \${req.connection.remoteAddress || 'N/A'}\`);
+  console.log(''); // Empty line for readability
+  
   next();
 });
 
@@ -858,13 +885,17 @@ app.get('/health', (req, res) => {
 app.get('/proxy', async (req, res) => {
   const { url } = req.query;
   const timestamp = new Date().toLocaleString();
+  const clientIP = (req.headers['x-forwarded-for'] || 
+                   req.headers['x-real-ip'] || 
+                   req.connection.remoteAddress || 
+                   req.ip || 'unknown').replace(/^::ffff:/, '');
   
   if (!url) {
-    console.log(\`❌ [\${timestamp}] CORS Proxy Error: No URL parameter provided\`);
+    console.log(\`❌ [\${timestamp}] CORS Proxy Error from \${clientIP}: No URL parameter provided\`);
     return res.status(400).json({ error: 'URL parameter is required' });
   }
   
-  console.log(\`🔄 [\${timestamp}] CORS Proxy Request: \${url}\`);
+  console.log(\`🔄 [\${timestamp}] CORS Proxy Request from \${clientIP}: \${url}\`);
   console.log(\`   📡 Fetching content from: \${url}\`);
   
   try {
@@ -890,7 +921,7 @@ app.get('/proxy', async (req, res) => {
     const fetchTime = Date.now() - fetchStart;
     
     if (!response.ok) {
-      console.log(\`❌ [\${timestamp}] HTTP Error: \${response.status} \${response.statusText} for \${url}\`);
+      console.log(\`❌ [\${timestamp}] HTTP Error for \${clientIP}: \${response.status} \${response.statusText} for \${url}\`);
       throw new Error(\`HTTP error! status: \${response.status}\`);
     }
     
@@ -898,18 +929,20 @@ app.get('/proxy', async (req, res) => {
     const data = await response.text();
     const dataSize = data.length;
     
-    console.log(\`✅ [\${timestamp}] Successfully proxied \${url}\`);
+    console.log(\`✅ [\${timestamp}] Successfully proxied \${url} for \${clientIP}\`);
     console.log(\`   ⏱️  Fetch time: \${fetchTime}ms\`);
     console.log(\`   📄 Content-Type: \${contentType}\`);
     console.log(\`   📊 Data size: \${dataSize} characters\`);
     console.log(\`   🔍 Response preview: \${data.substring(0, 100).replace(/\\n/g, ' ')}...\`);
+    console.log(''); // Empty line for readability
     
     res.set('Content-Type', contentType);
     res.send(data);
     
   } catch (error) {
-    console.error(\`💥 [\${timestamp}] CORS Proxy Error for \${url}:\`, error.message);
+    console.error(\`💥 [\${timestamp}] CORS Proxy Error for \${clientIP} requesting \${url}:\`, error.message);
     console.error(\`   🔍 Error details:\`, error);
+    console.log(''); // Empty line for readability
     
     res.status(500).json({ 
       error: 'Failed to fetch URL', 
@@ -960,11 +993,15 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(\`   🏡 Network IP: http://\${ip}:\${PORT}\`);
   });
   
+  console.log(\`\\n🔍 Client Connection Monitoring:\`);
+  console.log(\`   All client connections and their IP addresses will be logged below.\`);
+  console.log(\`   This helps you identify which devices are connecting to the bridge.\`);
+  
   console.log(\`\\n💡 Usage Examples:\`);
   console.log(\`   curl "http://localhost:\${PORT}/health"\`);
   console.log(\`   curl "http://localhost:\${PORT}/proxy?url=https://example.com"\`);
-  console.log(\`\\n🔍 All requests will be logged to this console\`);
-  console.log(\`✨ Ready to serve CORS requests from any device on your network!\\n\`);
+  console.log(\`\\n✨ Ready to serve CORS requests from any device on your network!\\n\`);
+  console.log(\`📋 Waiting for connections...\\n\`);
 });
 
 // Graceful shutdown
