@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import { RECIPE_CATEGORIES, KITCHEN_CATEGORIES } from './constants.js';
 
 export function AppState() {
   // State
@@ -66,10 +67,10 @@ export function AppState() {
   const editingRecipe = ref(false);
   
   // Recipe categories
-  const recipeCategories = ref(['Holiday', 'Breakfast', 'Lunch/Dinner', 'Dessert']);
+  const recipeCategories = ref(RECIPE_CATEGORIES);
   
   // Kitchen categories
-  const kitchenCategories = ref(['Produce', 'Dairy & Cold Food', 'Meat & Seafood', 'Pantry', 'Frozen', 'Bakery', 'Spices', 'Other']);
+  const kitchenCategories = ref(KITCHEN_CATEGORIES);
   const kitchenCategoryFilter = ref('All');
   
   // Import/Export state

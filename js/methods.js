@@ -1,6 +1,7 @@
 import { onMounted, watch } from 'vue';
 import { saveToLocalStorage } from './storageService.js';
 import { fetchRecipeFromUrl } from './recipeService.js';
+import { WEEK_START_OPTIONS, NUMBER_OF_WEEKS_OPTIONS } from './constants.js';
 
 export function setupMethods(state) {
   function getDayName(index) {
@@ -600,15 +601,11 @@ export function setupMethods(state) {
   }
 
   function getStartDayOptions() {
-    return [
-      { value: 0, label: 'Monday' },
-      { value: 1, label: 'Tuesday' },
-      { value: 2, label: 'Wednesday' },
-      { value: 3, label: 'Thursday' },
-      { value: 4, label: 'Friday' },
-      { value: 5, label: 'Saturday' },
-      { value: 6, label: 'Sunday' }
-    ];
+    return WEEK_START_OPTIONS;
+  }
+
+  function getNumberOfWeeksOptions() {
+    return NUMBER_OF_WEEKS_OPTIONS;
   }
 
   function exportData() {
@@ -690,7 +687,7 @@ export function setupMethods(state) {
 
           // Merge favorites (avoid duplicates by title)
           if (importedData.favorites && Array.isArray(importedData.favorites)) {
-            const existingTitles = new Set(state.favorites.value.map(r => r.title.toLowerCase));
+            const existingTitles = new Set(state.favorites.value.map(r => r.title.toLowerCase()));
 
             importedData.favorites.forEach(importedRecipe => {
               if (!existingTitles.has(importedRecipe.title.toLowerCase())) {
@@ -824,6 +821,7 @@ export function setupMethods(state) {
     changeWeekStartDay,
     changeNumberOfWeeks,
     getStartDayOptions,
+    getNumberOfWeeksOptions,
     exportData,
     handleFileSelection,
     importData
