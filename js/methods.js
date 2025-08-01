@@ -780,7 +780,7 @@ export function setupMethods(state) {
     reader.readAsText(file);
   }
 
-  async function downloadDesktopBridge() {
+  function downloadDesktopBridge() {
     // Create the desktop bridge package content
     const bridgeFiles = {
       'package.json': JSON.stringify({
@@ -1013,111 +1013,157 @@ process.on('SIGINT', () => {
 process.on('SIGTERM', () => {
   console.log('\\n🛑 Received SIGTERM. Gracefully shutting down...');
   process.exit(0);
-});
+});`,
 
-// Create a ZIP file
-const zip = new JSZip();
+      'README.md': `# Meal Planner CORS Bridge
+
+A local CORS proxy server for Meal Planner Pro to bypass CORS restrictions when importing recipes from external websites.
+
+## Features
+
+- Local CORS proxy server
+- Network access from any device on your household network
+- No external dependencies for CORS bypassing
+- Fast and reliable recipe importing
+- Privacy-focused (requests stay on your network)
+
+## Installation
+
+1. Make sure you have Node.js installed (version 14 or higher)
+2. Extract this zip file to a folder
+3. Open a terminal/command prompt in the extracted folder
+4. Run: \`npm install\`
+
+## Usage
+
+1. Start the bridge server:
+   \`\`\`
+   npm start
+   \`\`\`
+
+2. The server will start on port 3001 and display all available network addresses
+3. You can access the bridge from any device on your network using the displayed IP addresses
+4. In Meal Planner Pro, go to Settings → Configure Bridge IP to set your custom IP address
+
+## Network Configuration
+
+The bridge automatically detects and displays all available network IP addresses. Common formats include:
+
+- **Localhost**: http://localhost:3001 (same device only)
+- **Network IP**: http://192.168.1.100:3001 (example - use your actual IP)
+
+## Finding Your IP Address
+
+- **Windows**: Open Command Prompt and type \`ipconfig\`
+- **Mac**: Open Terminal and type \`ifconfig\` or check System Preferences → Network
+- **Linux**: Open Terminal and type \`ip addr\` or \`ifconfig\`
+
+Look for an IP address that starts with 192.168.x.x or 10.x.x.x
+
+## Health Check
+
+Visit \`http://[your-ip]:3001/health\` to verify the server is running properly from any device.
+
+## Endpoints
+
+- **GET /health** - Server health check
+- **GET /proxy?url=<target-url>** - CORS proxy endpoint
+
+## Troubleshooting
+
+1. **Port in use**: If port 3001 is busy, set a different port:
+   \`\`\`
+   PORT=3002 npm start
+   \`\`\`
+
+2. **Network access issues**: Make sure your firewall allows Node.js to accept incoming connections
+
+3. **Cannot connect from other devices**: 
+   - Verify the bridge is running and showing network IP addresses
+   - Check that other devices are on the same network
+   - Try temporarily disabling firewall/antivirus software
+
+## Security Note
+
+This bridge is designed for local network use only. The server binds to all interfaces (0.0.0.0) to allow household network access, but should not be exposed to the internet without proper security measures.`,
+
+      'start.bat': `@echo off
+echo Starting Meal Planner CORS Bridge...
+echo This will allow access from any device on your network
+echo.
+npm start
+pause`,
+
+      'start.sh': `#!/bin/bash
+echo "Starting Meal Planner CORS Bridge..."
+echo "This will allow access from any device on your network"
+echo
+npm start`,
+
+      '.gitignore': `node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.DS_Store`
+    };
+
+    // Create zip file using JSZip
+    const zip = new JSZip();
     
-// Add files to the ZIP
-Object.entries(bridgeFiles).forEach(([filename, content]) => {
-  zip.file(filename, content);
-});
-
-try {
-  // Generate the ZIP file
-  const content = await zip.generateAsync({ type: 'blob' });
-  
-  // Create a download link
-  const url = URL.createObjectURL(content);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `meal-planner-desktop-bridge-${new Date().toISOString().split('T')[0]}.zip`;
-  document.body.appendChild(link);
-  link.click();
-  
-  // Clean up
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-  
-  alert('✅ Desktop Bridge downloaded successfully!\n\nExtract the ZIP file and follow the README.md instructions to set up the local CORS proxy.');
-  
-} catch (error) {
-  console.error('Error creating ZIP file:', error);
-  alert('❌ Error creating download file. Please try again.');
-}
+    // Add all files to the zip
+    Object.entries(bridgeFiles).forEach(([filename, content]) => {
+      zip.file(filename, content);
+    });
+    
+    // Generate and download the zip file
+    zip.generateAsync({ type: 'blob' })
+      .then(function(content) {
+        // Create download link
+        const url = URL.createObjectURL(content);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'meal-planner-cors-bridge.zip';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Close settings menu
+        state.showSettingsMenu.value = false;
+        
+        // Show success message
+        setTimeout(() => {
+          alert('Desktop Bridge downloaded successfully!\n\nExtract the zip file and follow these steps:\n1. Make sure Node.js is installed\n2. Open terminal in the extracted folder\n3. Run: npm install\n4. Run: npm start\n\nThe bridge will run on http://localhost:3001');
+        }, 100);
+      })
+      .catch(function(error) {
+        console.error('Error creating zip file:', error);
+        alert('Error creating zip file. Please try again.');
+      });
   }
 
-  async function saveCustomBridgeIP() {
+  function saveCustomBridgeIP() {
     const ip = state.customBridgeIP.value.trim();
     
     // Basic IP validation
     if (ip && !/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip)) {
-      state.bridgeConnectionStatus.value = 'Invalid IP address format';
+      alert('Please enter a valid IP address (e.g., 192.168.1.100)');
       return;
     }
     
+    saveToLocalStorage(state);
+    state.showBridgeIPModal.value = false;
+    
     if (ip) {
-      // Test the bridge connection before saving
-      state.bridgeConnectionTesting.value = true;
-      state.bridgeConnectionStatus.value = 'Testing connection...';
-      
-      try {
-        const healthUrl = `http://${ip}:3001/health`;
-        console.log(`🔍 Testing bridge connection to: ${healthUrl}`);
-        
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 5000); // 5 second timeout
-        
-        const response = await fetch(healthUrl, {
-          signal: controller.signal,
-          method: 'GET'
-        });
-        
-        if (response.ok) {
-          const health = await response.json();
-          if (health.status === 'ok') {
-            // Connection successful
-            state.bridgeConnectionStatus.value = '✅ Bridge connected successfully!';
-            saveToLocalStorage(state);
-            
-            setTimeout(() => {
-              state.showBridgeIPModal.value = false;
-              state.bridgeConnectionStatus.value = '';
-              alert(`✅ Custom Bridge IP saved and verified: ${ip}\n\nDesktop Bridge is running and accessible on ${ip}:3001`);
-            }, 1500);
-          } else {
-            throw new Error('Bridge health check failed');
-          }
-        } else {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-      } catch (error) {
-        console.error('Bridge connection test failed:', error);
-        
-        if (error.name === 'AbortError') {
-          state.bridgeConnectionStatus.value = '❌ Connection timeout - Bridge not responding';
-        } else {
-          state.bridgeConnectionStatus.value = `❌ Connection failed: ${error.message}`;
-        }
-        
-        // Don't save the IP if connection failed
-        setTimeout(() => {
-          state.bridgeConnectionStatus.value = '';
-        }, 5000);
-      } finally {
-        state.bridgeConnectionTesting.value = false;
-      }
+      alert(`Custom Bridge IP saved: ${ip}\n\nMake sure the Desktop Bridge is running on ${ip}:3001`);
     } else {
-      // Clearing the IP - no need to test connection
-      saveToLocalStorage(state);
-      state.showBridgeIPModal.value = false;
       alert('Custom Bridge IP cleared. Will use default localhost connections.');
     }
   }
 
   function clearCustomBridgeIP() {
     state.customBridgeIP.value = '';
-    state.bridgeConnectionStatus.value = '';
     saveToLocalStorage(state);
     state.showBridgeIPModal.value = false;
     alert('Custom Bridge IP cleared.');
