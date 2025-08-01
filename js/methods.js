@@ -1015,7 +1015,6 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-  // New Methods for Checklists
   function saveCustomBridgeIP() {
     const ip = state.customBridgeIP.value.trim();
     
