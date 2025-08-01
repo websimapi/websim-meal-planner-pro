@@ -81,6 +81,10 @@ export function AppState() {
   // Add settings menu state
   const showSettingsMenu = ref(false);
   
+  // Bridge IP Configuration
+  const customBridgeIP = ref('');
+  const showBridgeIPModal = ref(false);
+  
   // Computed properties
   const filteredFavorites = computed(() => {
     let filtered = favorites.value;
@@ -191,6 +195,8 @@ export function AppState() {
     importOption,
     fileSelected,
     importError,
-    showSettingsMenu
+    showSettingsMenu,
+    customBridgeIP,
+    showBridgeIPModal
   };
 }

@@ -805,9 +805,26 @@ export function setupMethods(state) {
       'server.js': `const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Get local IP addresses
+function getLocalIPAddresses() {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        addresses.push(iface.address);
+      }
+    }
+  }
+  
+  return addresses;
+}
 
 // Enable CORS for all routes
 app.use(cors({
@@ -926,18 +943,28 @@ app.use((err, req, res, next) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
+  const localIPs = getLocalIPAddresses();
+  
   console.log(\`\\n🚀 ========================================\`);
   console.log(\`🚀 Meal Planner CORS Bridge v1.0.0\`);
   console.log(\`🚀 ========================================\`);
   console.log(\`📡 Server running on port \${PORT}\`);
   console.log(\`🏥 Health check: http://localhost:\${PORT}/health\`);
   console.log(\`🔗 Proxy endpoint: http://localhost:\${PORT}/proxy?url=<target-url>\`);
+  console.log(\`\\n🌐 Network Access Points:\`);
+  console.log(\`   🏠 Localhost: http://localhost:\${PORT}\`);
+  console.log(\`   🏠 Localhost: http://127.0.0.1:\${PORT}\`);
+  
+  localIPs.forEach(ip => {
+    console.log(\`   🏡 Network IP: http://\${ip}:\${PORT}\`);
+  });
+  
   console.log(\`\\n💡 Usage Examples:\`);
   console.log(\`   curl "http://localhost:\${PORT}/health"\`);
   console.log(\`   curl "http://localhost:\${PORT}/proxy?url=https://example.com"\`);
   console.log(\`\\n🔍 All requests will be logged to this console\`);
-  console.log(\`✨ Ready to serve CORS requests!\\n\`);
+  console.log(\`✨ Ready to serve CORS requests from any device on your network!\\n\`);
 });
 
 // Graceful shutdown
@@ -958,6 +985,7 @@ A local CORS proxy server for Meal Planner Pro to bypass CORS restrictions when 
 ## Features
 
 - Local CORS proxy server
+- Network access from any device on your household network
 - No external dependencies for CORS bypassing
 - Fast and reliable recipe importing
 - Privacy-focused (requests stay on your network)
@@ -976,18 +1004,28 @@ A local CORS proxy server for Meal Planner Pro to bypass CORS restrictions when 
    npm start
    \`\`\`
 
-2. The server will start on port 3001 by default
-3. You should see a message confirming the server is running
-4. The bridge will now handle CORS requests for recipe imports
+2. The server will start on port 3001 and display all available network addresses
+3. You can access the bridge from any device on your network using the displayed IP addresses
+4. In Meal Planner Pro, go to Settings → Configure Bridge IP to set your custom IP address
 
-## Configuration
+## Network Configuration
 
-- **Port**: Set the PORT environment variable to change the default port
-- **Network Access**: The server accepts connections from any origin by default
+The bridge automatically detects and displays all available network IP addresses. Common formats include:
+
+- **Localhost**: http://localhost:3001 (same device only)
+- **Network IP**: http://192.168.1.100:3001 (example - use your actual IP)
+
+## Finding Your IP Address
+
+- **Windows**: Open Command Prompt and type \`ipconfig\`
+- **Mac**: Open Terminal and type \`ifconfig\` or check System Preferences → Network
+- **Linux**: Open Terminal and type \`ip addr\` or \`ifconfig\`
+
+Look for an IP address that starts with 192.168.x.x or 10.x.x.x
 
 ## Health Check
 
-Visit \`http://localhost:3001/health\` to verify the server is running properly.
+Visit \`http://[your-ip]:3001/health\` to verify the server is running properly from any device.
 
 ## Endpoints
 
@@ -1001,22 +1039,27 @@ Visit \`http://localhost:3001/health\` to verify the server is running properly.
    PORT=3002 npm start
    \`\`\`
 
-2. **Permission issues**: On some systems, you may need to run as administrator
+2. **Network access issues**: Make sure your firewall allows Node.js to accept incoming connections
 
-3. **Firewall**: Make sure your firewall allows the application to accept connections
+3. **Cannot connect from other devices**: 
+   - Verify the bridge is running and showing network IP addresses
+   - Check that other devices are on the same network
+   - Try temporarily disabling firewall/antivirus software
 
 ## Security Note
 
-This bridge is designed for local use only. Do not expose it to the internet without proper security measures.`,
+This bridge is designed for local network use only. The server binds to all interfaces (0.0.0.0) to allow household network access, but should not be exposed to the internet without proper security measures.`,
 
       'start.bat': `@echo off
 echo Starting Meal Planner CORS Bridge...
+echo This will allow access from any device on your network
 echo.
 npm start
 pause`,
 
       'start.sh': `#!/bin/bash
 echo "Starting Meal Planner CORS Bridge..."
+echo "This will allow access from any device on your network"
 echo
 npm start`,
 
@@ -1061,6 +1104,32 @@ yarn-error.log*
         console.error('Error creating zip file:', error);
         alert('Error creating zip file. Please try again.');
       });
+  }
+
+  function saveCustomBridgeIP() {
+    const ip = state.customBridgeIP.value.trim();
+    
+    // Basic IP validation
+    if (ip && !/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip)) {
+      alert('Please enter a valid IP address (e.g., 192.168.1.100)');
+      return;
+    }
+    
+    saveToLocalStorage(state);
+    state.showBridgeIPModal.value = false;
+    
+    if (ip) {
+      alert(`Custom Bridge IP saved: ${ip}\n\nMake sure the Desktop Bridge is running on ${ip}:3001`);
+    } else {
+      alert('Custom Bridge IP cleared. Will use default localhost connections.');
+    }
+  }
+
+  function clearCustomBridgeIP() {
+    state.customBridgeIP.value = '';
+    saveToLocalStorage(state);
+    state.showBridgeIPModal.value = false;
+    alert('Custom Bridge IP cleared.');
   }
 
   // Initialize dark mode on startup
@@ -1110,6 +1179,8 @@ yarn-error.log*
     exportData,
     handleFileSelection,
     importData,
-    downloadDesktopBridge
+    downloadDesktopBridge,
+    saveCustomBridgeIP,
+    clearCustomBridgeIP
   };
 }

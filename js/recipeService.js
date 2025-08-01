@@ -4,17 +4,34 @@
  * @returns {Promise<Object>} - The parsed recipe object
  */
 export async function fetchRecipeFromUrl(url) {
+  // Get custom IP from localStorage for bridge configuration
+  const customIP = localStorage.getItem('meal-planner-custom-bridge-ip') || '';
+  
   // Check if local bridge is available first
   const localBridgeUrls = [
     'http://localhost:3001/proxy?url=',
-    'http://127.0.0.1:3001/proxy?url=',
-    'http://192.168.1.100:3001/proxy?url=', // Common local IP - user can modify
-    'http://192.168.0.100:3001/proxy?url='  // Common local IP - user can modify
+    'http://127.0.0.1:3001/proxy?url='
   ];
+  
+  // Add custom IP if provided
+  if (customIP.trim()) {
+    localBridgeUrls.unshift(`http://${customIP.trim()}:3001/proxy?url=`);
+  }
+  
+  // Add some common local IPs as fallback
+  localBridgeUrls.push(
+    'http://192.168.1.100:3001/proxy?url=',
+    'http://192.168.0.100:3001/proxy?url=',
+    'http://10.0.0.100:3001/proxy?url='
+  );
 
   // Test local bridge availability first
   let workingLocalBridge = null;
   console.log('🔍 Checking for local Desktop Bridge...');
+  
+  if (customIP.trim()) {
+    console.log(`🏠 Using custom Bridge IP: ${customIP.trim()}`);
+  }
   
   for (const bridgeUrl of localBridgeUrls) {
     try {

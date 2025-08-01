@@ -5,6 +5,7 @@ export function saveToLocalStorage(state) {
   localStorage.setItem('meal-planner-kitchen', JSON.stringify(state.kitchenInventory.value));
   localStorage.setItem('meal-planner-week-start', state.weekStartDay.value.toString());
   localStorage.setItem('meal-planner-num-weeks', state.numberOfWeeks.value.toString());
+  localStorage.setItem('meal-planner-custom-bridge-ip', state.customBridgeIP.value);
 }
 
 export function loadFromLocalStorage(state) {
@@ -60,6 +61,12 @@ export function loadFromLocalStorage(state) {
     
     // Adjust number of weeks if needed
     adjustMenuWeeks(state);
+  }
+  
+  // Load custom bridge IP
+  const savedBridgeIP = localStorage.getItem('meal-planner-custom-bridge-ip');
+  if (savedBridgeIP) {
+    state.customBridgeIP.value = savedBridgeIP;
   }
   
   if (savedMenu) {

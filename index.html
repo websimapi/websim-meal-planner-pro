@@ -41,6 +41,9 @@
                         <button @click="downloadDesktopBridge" class="settings-item">
                             <i class="bi bi-cloud-arrow-down"></i> Download Desktop Bridge
                         </button>
+                        <button @click="showBridgeIPModal = true; showSettingsMenu = false" class="settings-item">
+                            <i class="bi bi-router"></i> Configure Bridge IP
+                        </button>
                     </div>
                 </div>
             </div>
@@ -676,6 +679,46 @@
                         :disabled="!fileSelected">
                         Import
                     </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bridge IP Configuration Modal -->
+        <div v-if="showBridgeIPModal" class="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>Configure Desktop Bridge IP</h2>
+                    <button @click="showBridgeIPModal = false" class="icon-btn">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="bridge-ip">Custom Bridge IP Address</label>
+                        <input 
+                            type="text" 
+                            id="bridge-ip" 
+                            v-model="customBridgeIP" 
+                            placeholder="e.g., 192.168.1.100"
+                            pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                    </div>
+                    <div class="note">
+                        <i class="bi bi-info-circle"></i>
+                        <div>
+                            <p><strong>How to find your IP address:</strong></p>
+                            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                                <li><strong>Windows:</strong> Open Command Prompt and type <code>ipconfig</code></li>
+                                <li><strong>Mac:</strong> Open Terminal and type <code>ifconfig</code> or check System Preferences → Network</li>
+                                <li><strong>Linux:</strong> Open Terminal and type <code>ip addr</code> or <code>ifconfig</code></li>
+                            </ul>
+                            <p>Look for an IP address that starts with 192.168.x.x or 10.x.x.x</p>
+                            <p><strong>Note:</strong> The Desktop Bridge must be running on the device with this IP address on port 3001.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="clearCustomBridgeIP" class="secondary-btn">Clear</button>
+                    <button @click="saveCustomBridgeIP" class="primary-btn">Save</button>
                 </div>
             </div>
         </div>
