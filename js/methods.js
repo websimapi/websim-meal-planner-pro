@@ -1014,6 +1014,37 @@ process.on('SIGTERM', () => {
   console.log('\\n🛑 Received SIGTERM. Gracefully shutting down...');
   process.exit(0);
 });
+
+// Create a ZIP file
+const zip = new JSZip();
+    
+// Add files to the ZIP
+Object.entries(bridgeFiles).forEach(([filename, content]) => {
+  zip.file(filename, content);
+});
+
+try {
+  // Generate the ZIP file
+  const content = await zip.generateAsync({ type: 'blob' });
+  
+  // Create a download link
+  const url = URL.createObjectURL(content);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `meal-planner-desktop-bridge-${new Date().toISOString().split('T')[0]}.zip`;
+  document.body.appendChild(link);
+  link.click();
+  
+  // Clean up
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  alert('✅ Desktop Bridge downloaded successfully!\n\nExtract the ZIP file and follow the README.md instructions to set up the local CORS proxy.');
+  
+} catch (error) {
+  console.error('Error creating ZIP file:', error);
+  alert('❌ Error creating download file. Please try again.');
+}
   }
 
   async function saveCustomBridgeIP() {
