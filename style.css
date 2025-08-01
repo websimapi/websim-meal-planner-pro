@@ -660,20 +660,6 @@ select:focus {
   gap: 0.5rem;
 }
 
-.note ul {
-  margin: 0.5rem 0;
-  padding-left: 1.5rem;
-  list-style-type: disc;
-}
-
-.note code {
-  background-color: var(--border-color);
-  padding: 0.1rem 0.3rem;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9em;
-}
-
 .error-message {
   color: var(--danger-color);
   padding: 0.5rem;
