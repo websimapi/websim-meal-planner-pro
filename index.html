@@ -688,7 +688,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2>Configure Desktop Bridge IP</h2>
-                    <button @click="showBridgeIPModal = false" class="icon-btn">
+                    <button @click="showBridgeIPModal = false; bridgeConnectionStatus = ''" class="icon-btn">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
@@ -700,8 +700,20 @@
                             id="bridge-ip" 
                             v-model="customBridgeIP" 
                             placeholder="e.g., 192.168.1.100"
-                            pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                            pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+                            :disabled="bridgeConnectionTesting">
                     </div>
+                    
+                    <!-- Connection Status Display -->
+                    <div v-if="bridgeConnectionStatus" class="connection-status" :class="{ 
+                        'status-testing': bridgeConnectionTesting,
+                        'status-success': bridgeConnectionStatus.includes('✅'),
+                        'status-error': bridgeConnectionStatus.includes('❌')
+                    }">
+                        <i v-if="bridgeConnectionTesting" class="bi bi-arrow-repeat spinning"></i>
+                        <span>{{ bridgeConnectionStatus }}</span>
+                    </div>
+                    
                     <div class="note">
                         <i class="bi bi-info-circle"></i>
                         <div>
@@ -717,8 +729,12 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button @click="clearCustomBridgeIP" class="secondary-btn">Clear</button>
-                    <button @click="saveCustomBridgeIP" class="primary-btn">Save</button>
+                    <button @click="clearCustomBridgeIP" class="secondary-btn" :disabled="bridgeConnectionTesting">Clear</button>
+                    <button @click="saveCustomBridgeIP" class="primary-btn" :disabled="bridgeConnectionTesting">
+                        <i v-if="bridgeConnectionTesting" class="bi bi-arrow-repeat spinning"></i>
+                        <span v-if="bridgeConnectionTesting">Testing...</span>
+                        <span v-else>Save & Test</span>
+                    </button>
                 </div>
             </div>
         </div>

@@ -84,6 +84,8 @@ export function AppState() {
   // Bridge IP Configuration
   const customBridgeIP = ref('');
   const showBridgeIPModal = ref(false);
+  const bridgeConnectionTesting = ref(false);
+  const bridgeConnectionStatus = ref('');
   
   // Computed properties
   const filteredFavorites = computed(() => {
@@ -197,6 +199,8 @@ export function AppState() {
     importError,
     showSettingsMenu,
     customBridgeIP,
-    showBridgeIPModal
+    showBridgeIPModal,
+    bridgeConnectionTesting,
+    bridgeConnectionStatus
   };
 }

@@ -780,7 +780,7 @@ export function setupMethods(state) {
     reader.readAsText(file);
   }
 
-  function downloadDesktopBridge() {
+  async function downloadDesktopBridge() {
     // Create the desktop bridge package content
     const bridgeFiles = {
       'package.json': JSON.stringify({
@@ -1014,28 +1014,79 @@ process.on('SIGTERM', () => {
   console.log('\\n🛑 Received SIGTERM. Gracefully shutting down...');
   process.exit(0);
 });
+  }
 
-  function saveCustomBridgeIP() {
+  async function saveCustomBridgeIP() {
     const ip = state.customBridgeIP.value.trim();
     
     // Basic IP validation
     if (ip && !/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip)) {
-      alert('Please enter a valid IP address (e.g., 192.168.1.100)');
+      state.bridgeConnectionStatus.value = 'Invalid IP address format';
       return;
     }
     
-    saveToLocalStorage(state);
-    state.showBridgeIPModal.value = false;
-    
     if (ip) {
-      alert(`Custom Bridge IP saved: ${ip}\n\nMake sure the Desktop Bridge is running on ${ip}:3001`);
+      // Test the bridge connection before saving
+      state.bridgeConnectionTesting.value = true;
+      state.bridgeConnectionStatus.value = 'Testing connection...';
+      
+      try {
+        const healthUrl = `http://${ip}:3001/health`;
+        console.log(`🔍 Testing bridge connection to: ${healthUrl}`);
+        
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        const response = await fetch(healthUrl, {
+          signal: controller.signal,
+          method: 'GET'
+        });
+        
+        if (response.ok) {
+          const health = await response.json();
+          if (health.status === 'ok') {
+            // Connection successful
+            state.bridgeConnectionStatus.value = '✅ Bridge connected successfully!';
+            saveToLocalStorage(state);
+            
+            setTimeout(() => {
+              state.showBridgeIPModal.value = false;
+              state.bridgeConnectionStatus.value = '';
+              alert(`✅ Custom Bridge IP saved and verified: ${ip}\n\nDesktop Bridge is running and accessible on ${ip}:3001`);
+            }, 1500);
+          } else {
+            throw new Error('Bridge health check failed');
+          }
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('Bridge connection test failed:', error);
+        
+        if (error.name === 'AbortError') {
+          state.bridgeConnectionStatus.value = '❌ Connection timeout - Bridge not responding';
+        } else {
+          state.bridgeConnectionStatus.value = `❌ Connection failed: ${error.message}`;
+        }
+        
+        // Don't save the IP if connection failed
+        setTimeout(() => {
+          state.bridgeConnectionStatus.value = '';
+        }, 5000);
+      } finally {
+        state.bridgeConnectionTesting.value = false;
+      }
     } else {
+      // Clearing the IP - no need to test connection
+      saveToLocalStorage(state);
+      state.showBridgeIPModal.value = false;
       alert('Custom Bridge IP cleared. Will use default localhost connections.');
     }
   }
 
   function clearCustomBridgeIP() {
     state.customBridgeIP.value = '';
+    state.bridgeConnectionStatus.value = '';
     saveToLocalStorage(state);
     state.showBridgeIPModal.value = false;
     alert('Custom Bridge IP cleared.');
