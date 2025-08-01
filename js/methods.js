@@ -690,7 +690,7 @@ export function setupMethods(state) {
 
           // Merge favorites (avoid duplicates by title)
           if (importedData.favorites && Array.isArray(importedData.favorites)) {
-            const existingTitles = new Set(state.favorites.value.map(r => r.title.toLowerCase));
+            const existingTitles = new Set(state.favorites.value.map(r => r.title.toLowerCase()));
 
             importedData.favorites.forEach(importedRecipe => {
               if (!existingTitles.has(importedRecipe.title.toLowerCase())) {
@@ -961,67 +961,39 @@ yarn-error.log*
 .DS_Store`
     };
 
-    // Create zip content (simple text-based approach for demonstration)
-    let zipContent = 'PK\x03\x04'; // ZIP file signature
+    // Create zip file using JSZip
+    const zip = new JSZip();
     
-    // For a real implementation, you'd use a proper zip library
-    // For now, we'll create a simple archive structure
+    // Add all files to the zip
+    Object.entries(bridgeFiles).forEach(([filename, content]) => {
+      zip.file(filename, content);
+    });
     
-    // Create a blob with installation instructions and download link
-    const installationGuide = `# Meal Planner Desktop Bridge
-
-## Quick Installation
-
-1. Download and install Node.js from https://nodejs.org (if not already installed)
-2. Create a new folder called "meal-planner-bridge"
-3. Save the following files in that folder:
-
-### package.json
-\`\`\`json
-${bridgeFiles['package.json']}
-\`\`\`
-
-### server.js
-\`\`\`javascript
-${bridgeFiles['server.js']}
-\`\`\`
-
-### README.md
-\`\`\`markdown
-${bridgeFiles['README.md']}
-\`\`\`
-
-## Installation Steps
-
-1. Open a terminal/command prompt in the "meal-planner-bridge" folder
-2. Run: \`npm install\`
-3. Run: \`npm start\`
-4. The bridge will start on http://localhost:3001
-
-## Using with Meal Planner Pro
-
-Once the bridge is running, Meal Planner Pro will automatically detect and use it for recipe imports, providing faster and more reliable CORS handling.
-
-The bridge will show a message when it's ready to handle requests.`;
-
-    // Create and download the installation guide
-    const blob = new Blob([installationGuide], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'meal-planner-bridge-installation-guide.md';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    // Close settings menu
-    state.showSettingsMenu.value = false;
-    
-    // Show a helpful message
-    setTimeout(() => {
-      alert('Desktop Bridge installation guide downloaded!\n\nThis guide contains all the files needed to set up your local CORS proxy. Follow the instructions in the downloaded file to install and run the bridge on your computer.');
-    }, 100);
+    // Generate and download the zip file
+    zip.generateAsync({ type: 'blob' })
+      .then(function(content) {
+        // Create download link
+        const url = URL.createObjectURL(content);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'meal-planner-cors-bridge.zip';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Close settings menu
+        state.showSettingsMenu.value = false;
+        
+        // Show success message
+        setTimeout(() => {
+          alert('Desktop Bridge downloaded successfully!\n\nExtract the zip file and follow these steps:\n1. Make sure Node.js is installed\n2. Open terminal in the extracted folder\n3. Run: npm install\n4. Run: npm start\n\nThe bridge will run on http://localhost:3001');
+        }, 100);
+      })
+      .catch(function(error) {
+        console.error('Error creating zip file:', error);
+        alert('Error creating zip file. Please try again.');
+      });
   }
 
   // Initialize dark mode on startup
