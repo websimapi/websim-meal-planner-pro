@@ -83,7 +83,7 @@ function adjustMenuWeeks(state) {
     // Add more weeks
     for (let i = currentWeeks; i < targetWeeks; i++) {
       state.menuWeeks.value.push(
-        Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] }))
+        Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
       );
     }
   } else {

@@ -5,8 +5,8 @@ export function AppState() {
   const activeTab = ref('menu');
   const favorites = ref([]);
   const menuWeeks = ref([
-    Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] })),
-    Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] }))
+    Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null })),
+    Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
   ]);
   const shoppingItems = ref([]);
   
@@ -81,28 +81,6 @@ export function AppState() {
   // Add settings menu state
   const showSettingsMenu = ref(false);
   
-  // Helper function to adjust the number of weeks in the menu
-  function adjustMenuWeeks(state) {
-    const currentWeeks = state.menuWeeks.value.length;
-    const targetWeeks = state.numberOfWeeks.value;
-    
-    if (currentWeeks === targetWeeks) {
-      return; // No adjustment needed
-    }
-    
-    if (currentWeeks < targetWeeks) {
-      // Add more weeks
-      for (let i = currentWeeks; i < targetWeeks; i++) {
-        state.menuWeeks.value.push(
-          Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] }))
-        );
-      }
-    } else {
-      // Remove excess weeks
-      state.menuWeeks.value = state.menuWeeks.value.slice(0, targetWeeks);
-    }
-  }
-
   // Computed properties
   const filteredFavorites = computed(() => {
     let filtered = favorites.value;

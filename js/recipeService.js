@@ -4,7 +4,15 @@
  * @returns {Promise<Object>} - The parsed recipe object
  */
 export async function fetchRecipeFromUrl(url) {
-  // List of CORS proxies to try in order
+  // Check if local bridge is available first
+  const localBridgeUrls = [
+    'http://localhost:3001/proxy?url=',
+    'http://127.0.0.1:3001/proxy?url=',
+    'http://192.168.1.100:3001/proxy?url=', // Common local IP - user can modify
+    'http://192.168.0.100:3001/proxy?url='  // Common local IP - user can modify
+  ];
+
+  // List of external CORS proxies to try as fallback
   const corsProxies = [
     'https://cors-anywhere.herokuapp.com/',
     'https://api.allorigins.win/raw?url=',
@@ -12,6 +20,9 @@ export async function fetchRecipeFromUrl(url) {
     'https://cors.zenscrape.com/?u=',
     'https://www.codepunker.com/get/cors?url='
   ];
+
+  // Combine local bridges and external proxies
+  const allProxies = [...localBridgeUrls, ...corsProxies];
   
   // Remove any existing protocol to avoid double protocol issues
   const cleanUrl = url.replace(/^(https?:\/\/)/, '');
@@ -20,11 +31,25 @@ export async function fetchRecipeFromUrl(url) {
   // Try each proxy until one works
   let html = null;
   let lastError = null;
+  let usedLocalBridge = false;
   
-  for (const proxy of corsProxies) {
+  for (const proxy of allProxies) {
     try {
       const proxyUrl = proxy + encodeURIComponent(targetUrl);
-      const response = await fetch(proxyUrl);
+      
+      // Set shorter timeout for local bridge attempts
+      const isLocalBridge = proxy.includes('localhost') || proxy.includes('127.0.0.1') || proxy.includes('192.168.');
+      const timeout = isLocalBridge ? 2000 : 10000; // 2s for local, 10s for external
+      
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), timeout);
+      
+      const response = await fetch(proxyUrl, {
+        signal: controller.signal,
+        headers: isLocalBridge ? {} : {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -34,17 +59,25 @@ export async function fetchRecipeFromUrl(url) {
       
       // If we got HTML, break out of the loop
       if (html && html.length > 0) {
+        if (isLocalBridge) {
+          usedLocalBridge = true;
+          console.log('✅ Using local Desktop Bridge for recipe import');
+        }
         break;
       }
     } catch (error) {
       lastError = error;
-      console.warn(`Proxy ${proxy} failed:`, error);
+      const isLocalBridge = proxy.includes('localhost') || proxy.includes('127.0.0.1') || proxy.includes('192.168.');
+      if (!isLocalBridge) {
+        console.warn(`External proxy ${proxy} failed:`, error);
+      }
       // Continue to the next proxy
     }
   }
   
   if (!html) {
-    throw new Error(lastError?.message || 'Failed to fetch recipe from URL using any proxy');
+    const bridgeMessage = '\n\nTip: For faster and more reliable recipe imports, consider downloading and running the Desktop Bridge from the settings menu.';
+    throw new Error((lastError?.message || 'Failed to fetch recipe from URL using any proxy') + bridgeMessage);
   }
   
   // Parse the HTML to extract recipe data

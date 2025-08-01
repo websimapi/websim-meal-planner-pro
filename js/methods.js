@@ -71,12 +71,8 @@ export function setupMethods(state) {
       state.menuWeeks.value.forEach(week => {
         week.forEach(day => {
           for (const mealType of ['breakfast', 'lunch', 'dinner']) {
-            if (day[mealType] && day[mealType].length > 0) {
-              for (let i = 0; i < day[mealType].length; i++) {
-                if (day[mealType][i].id === recipeData.id) {
-                  day[mealType][i] = recipeData;
-                }
-              }
+            if (day[mealType] && day[mealType].id === recipeData.id) {
+              day[mealType] = recipeData;
             }
           }
         });
@@ -136,10 +132,14 @@ export function setupMethods(state) {
     // Remove from menu
     state.menuWeeks.value.forEach(week => {
       week.forEach(day => {
-        for (const mealType of ['breakfast', 'lunch', 'dinner']) {
-          if (day[mealType] && day[mealType].length > 0) {
-            day[mealType] = day[mealType].filter(r => r.id !== recipeId);
-          }
+        if (day.breakfast && day.breakfast.id === recipeId) {
+          day.breakfast = null;
+        }
+        if (day.lunch && day.lunch.id === recipeId) {
+          day.lunch = null;
+        }
+        if (day.dinner && day.dinner.id === recipeId) {
+          day.dinner = null;
         }
       });
     });
@@ -163,22 +163,13 @@ export function setupMethods(state) {
   }
 
   function selectRecipeForMenu(recipe) {
-    const { week, day, mealType } = state.selectedDay.value;
-    if (!state.menuWeeks.value[week][day][mealType]) {
-      state.menuWeeks.value[week][day][mealType] = [];
-    }
-    state.menuWeeks.value[week][day][mealType].push(recipe);
+    state.menuWeeks.value[state.selectedDay.value.week][state.selectedDay.value.day][state.selectedDay.value.mealType] = recipe;
     state.showRecipeSelectorModal.value = false;
     saveToLocalStorage(state);
   }
 
-  function removeRecipeFromMenu(weekIndex, dayIndex, mealType, recipeIndex) {
-    state.menuWeeks.value[weekIndex][dayIndex][mealType].splice(recipeIndex, 1);
-    saveToLocalStorage(state);
-  }
-
   function clearDay(weekIndex, dayIndex, mealType) {
-    state.menuWeeks.value[weekIndex][dayIndex][mealType] = [];
+    state.menuWeeks.value[weekIndex][dayIndex][mealType] = null;
     saveToLocalStorage(state);
   }
 
@@ -186,9 +177,10 @@ export function setupMethods(state) {
     state.confirmTitle.value = 'Clear Menu';
     state.confirmMessage.value = 'Are you sure you want to clear the entire menu? This will remove all planned meals.';
     state.confirmAction.value = () => {
-      state.menuWeeks.value = Array(state.numberOfWeeks.value).fill().map(() => 
-        Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] }))
-      );
+      state.menuWeeks.value = [
+        Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null })),
+        Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
+      ];
       saveToLocalStorage(state);
       state.showConfirmModal.value = false;
     };
@@ -224,11 +216,13 @@ export function setupMethods(state) {
             mealType = 'dinner';
           } else {
             // Lunch/Dinner and Holiday can go in lunch or dinner
-            mealType = Math.random() > 0.5 ? 'lunch' : 'dinner';
+            mealType = !newMenu[w][d].lunch ? 'lunch' : 'dinner';
           }
 
-          newMenu[w][d][mealType].push(recipe);
-          placed = true;
+          if (!newMenu[w][d][mealType]) {
+            newMenu[w][d][mealType] = recipe;
+            placed = true;
+          }
         }
       }
 
@@ -237,8 +231,8 @@ export function setupMethods(state) {
         for (let w = 0; w < newMenu.length && !placed; w++) {
           for (let d = 0; d < newMenu[w].length && !placed; d++) {
             for (const mealType of ['breakfast', 'lunch', 'dinner']) {
-              if (newMenu[w][d][mealType].length === 0) {
-                newMenu[w][d][mealType].push(recipe);
+              if (!newMenu[w][d][mealType]) {
+                newMenu[w][d][mealType] = recipe;
                 placed = true;
                 break;
               }
@@ -252,29 +246,29 @@ export function setupMethods(state) {
     for (let w = 0; w < newMenu.length; w++) {
       for (let d = 0; d < newMenu[w].length; d++) {
         // Fill breakfast
-        if (newMenu[w][d].breakfast.length === 0 && breakfastRecipes.length > 0) {
+        if (!newMenu[w][d].breakfast && breakfastRecipes.length > 0) {
           const randomIndex = Math.floor(Math.random() * breakfastRecipes.length);
-          newMenu[w][d].breakfast.push(breakfastRecipes[randomIndex]);
+          newMenu[w][d].breakfast = breakfastRecipes[randomIndex];
           breakfastRecipes.splice(randomIndex, 1);
         }
 
         // Fill lunch
-        if (newMenu[w][d].lunch.length === 0 && lunchDinnerRecipes.length > 0) {
+        if (!newMenu[w][d].lunch && lunchDinnerRecipes.length > 0) {
           const randomIndex = Math.floor(Math.random() * lunchDinnerRecipes.length);
-          newMenu[w][d].lunch.push(lunchDinnerRecipes[randomIndex]);
+          newMenu[w][d].lunch = lunchDinnerRecipes[randomIndex];
           lunchDinnerRecipes.splice(randomIndex, 1);
         }
 
         // Fill dinner - try to add a dessert occasionally
-        if (newMenu[w][d].dinner.length === 0) {
+        if (!newMenu[w][d].dinner) {
           if (Math.random() > 0.7 && dessertRecipes.length > 0) {
             // 30% chance of dessert
             const randomIndex = Math.floor(Math.random() * dessertRecipes.length);
-            newMenu[w][d].dinner.push(dessertRecipes[randomIndex]);
+            newMenu[w][d].dinner = dessertRecipes[randomIndex];
             dessertRecipes.splice(randomIndex, 1);
           } else if (lunchDinnerRecipes.length > 0) {
             const randomIndex = Math.floor(Math.random() * lunchDinnerRecipes.length);
-            newMenu[w][d].dinner.push(lunchDinnerRecipes[randomIndex]);
+            newMenu[w][d].dinner = lunchDinnerRecipes[randomIndex];
             lunchDinnerRecipes.splice(randomIndex, 1);
           }
         }
@@ -294,32 +288,28 @@ export function setupMethods(state) {
       week.forEach(day => {
         // Process breakfast, lunch, and dinner recipes
         for (const mealType of ['breakfast', 'lunch', 'dinner']) {
-          if (day[mealType] && day[mealType].length > 0) {
-            day[mealType].forEach(recipe => {
-              if (recipe && recipe.ingredients) {
-                recipe.ingredients.forEach(ingredient => {
-                  const key = `${ingredient.name.toLowerCase()}_${ingredient.category}`;
+          if (day[mealType] && day[mealType].ingredients) {
+            day[mealType].ingredients.forEach(ingredient => {
+              const key = `${ingredient.name.toLowerCase()}_${ingredient.category}`;
 
-                  if (itemMap[key]) {
-                    // Already have this item, merge
-                    itemMap[key].count++;
-                  } else {
-                    // New item
-                    const item = {
-                      id: Date.now() + Math.random().toString().slice(2),
-                      name: ingredient.name,
-                      amount: ingredient.amount,
-                      category: ingredient.category,
-                      checked: false,
-                      count: 1,
-                      inKitchen: false,
-                      matchedKeyword: ''
-                    };
+              if (itemMap[key]) {
+                // Already have this item, merge
+                itemMap[key].count++;
+              } else {
+                // New item
+                const item = {
+                  id: Date.now() + Math.random().toString().slice(2),
+                  name: ingredient.name,
+                  amount: ingredient.amount,
+                  category: ingredient.category,
+                  checked: false,
+                  count: 1,
+                  inKitchen: false,
+                  matchedKeyword: ''
+                };
 
-                    itemMap[key] = item;
-                    allItems.push(item);
-                  }
-                });
+                itemMap[key] = item;
+                allItems.push(item);
               }
             });
           }
@@ -570,7 +560,7 @@ export function setupMethods(state) {
       // Add more weeks
       for (let i = currentWeeks; i < num; i++) {
         state.menuWeeks.value.push(
-          Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] }))
+          Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
         );
       }
     } else if (currentWeeks > num) {
@@ -581,7 +571,7 @@ export function setupMethods(state) {
       let hasPlannedMeals = false;
       for (let i = currentWeeks - weeksToRemove; i < currentWeeks; i++) {
         for (const day of state.menuWeeks.value[i]) {
-          if (day.breakfast.length > 0 || day.lunch.length > 0 || day.dinner.length > 0) {
+          if (day.breakfast || day.lunch || day.dinner) {
             hasPlannedMeals = true;
             break;
           }
@@ -685,8 +675,8 @@ export function setupMethods(state) {
           // Override - Replace all existing data
           state.favorites.value = importedData.favorites || [];
           state.menuWeeks.value = importedData.menuWeeks || [
-            Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] })),
-            Array(7).fill().map(() => ({ breakfast: [], lunch: [], dinner: [] }))
+            Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null })),
+            Array(7).fill().map(() => ({ breakfast: null, lunch: null, dinner: null }))
           ];
           state.householdEssentials.value = importedData.householdEssentials || [];
           state.kitchenInventory.value = importedData.kitchenInventory || [];
@@ -720,13 +710,13 @@ export function setupMethods(state) {
                 week.forEach((day, dayIndex) => {
                   // Only add meals if the slot is empty
                   if (dayIndex < state.menuWeeks.value[weekIndex].length) {
-                    if (state.menuWeeks.value[weekIndex][dayIndex].breakfast.length === 0 && day.breakfast) {
+                    if (!state.menuWeeks.value[weekIndex][dayIndex].breakfast && day.breakfast) {
                       state.menuWeeks.value[weekIndex][dayIndex].breakfast = day.breakfast;
                     }
-                    if (state.menuWeeks.value[weekIndex][dayIndex].lunch.length === 0 && day.lunch) {
+                    if (!state.menuWeeks.value[weekIndex][dayIndex].lunch && day.lunch) {
                       state.menuWeeks.value[weekIndex][dayIndex].lunch = day.lunch;
                     }
-                    if (state.menuWeeks.value[weekIndex][dayIndex].dinner.length === 0 && day.dinner) {
+                    if (!state.menuWeeks.value[weekIndex][dayIndex].dinner && day.dinner) {
                       state.menuWeeks.value[weekIndex][dayIndex].dinner = day.dinner;
                     }
                   }
@@ -737,7 +727,7 @@ export function setupMethods(state) {
 
           // Merge household essentials (avoid duplicates by name)
           if (importedData.householdEssentials && Array.isArray(importedData.householdEssentials)) {
-            const existingNames = new Set(state.householdEssentials.value.map(item => item.name.toLowerCase));
+            const existingNames = new Set(state.householdEssentials.value.map(item => item.name.toLowerCase()));
 
             importedData.householdEssentials.forEach(importedItem => {
               if (!existingNames.has(importedItem.name.toLowerCase())) {
@@ -752,7 +742,7 @@ export function setupMethods(state) {
 
           // Merge kitchen inventory (avoid duplicates by name)
           if (importedData.kitchenInventory && Array.isArray(importedData.kitchenInventory)) {
-            const existingNames = new Set(state.kitchenInventory.value.map(item => item.name.toLowerCase));
+            const existingNames = new Set(state.kitchenInventory.value.map(item => item.name.toLowerCase()));
 
             importedData.kitchenInventory.forEach(importedItem => {
               if (!existingNames.has(importedItem.name.toLowerCase())) {
@@ -790,6 +780,250 @@ export function setupMethods(state) {
     reader.readAsText(file);
   }
 
+  function downloadDesktopBridge() {
+    // Create the desktop bridge package content
+    const bridgeFiles = {
+      'package.json': JSON.stringify({
+        "name": "meal-planner-cors-bridge",
+        "version": "1.0.0",
+        "description": "Local CORS proxy bridge for Meal Planner Pro",
+        "main": "server.js",
+        "scripts": {
+          "start": "node server.js",
+          "dev": "nodemon server.js"
+        },
+        "dependencies": {
+          "cors": "^2.8.5",
+          "express": "^4.18.2",
+          "node-fetch": "^2.6.7"
+        },
+        "keywords": ["cors", "proxy", "meal-planner"],
+        "author": "Meal Planner Pro",
+        "license": "MIT"
+      }, null, 2),
+      
+      'server.js': `const express = require('express');
+const cors = require('cors');
+const fetch = require('node-fetch');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Enable CORS for all routes
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Parse JSON bodies
+app.use(express.json({ limit: '10mb' }));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Meal Planner CORS Bridge is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// CORS proxy endpoint
+app.get('/proxy', async (req, res) => {
+  const { url } = req.query;
+  
+  if (!url) {
+    return res.status(400).json({ error: 'URL parameter is required' });
+  }
+  
+  try {
+    // Validate the URL
+    new URL(url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      timeout: 10000
+    });
+    
+    if (!response.ok) {
+      throw new Error(\`HTTP error! status: \${response.status}\`);
+    }
+    
+    const contentType = response.headers.get('content-type') || 'text/html';
+    const data = await response.text();
+    
+    res.set('Content-Type', contentType);
+    res.send(data);
+    
+  } catch (error) {
+    console.error('Proxy error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch URL', 
+      message: error.message,
+      url: url
+    });
+  }
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(\`\\n🚀 Meal Planner CORS Bridge running on port \${PORT}\`);
+  console.log(\`📋 Health check: http://localhost:\${PORT}/health\`);
+  console.log(\`🔗 Proxy endpoint: http://localhost:\${PORT}/proxy?url=<target-url>\`);
+  console.log(\`\\n💡 Usage: Set your recipe import service to use this local bridge\`);
+  console.log(\`   Example: http://localhost:\${PORT}/proxy?url=https://example.com/recipe\`);
+  console.log('\\n✨ Ready to serve CORS requests!\\n');
+});`,
+
+      'README.md': `# Meal Planner CORS Bridge
+
+A local CORS proxy server for Meal Planner Pro to bypass CORS restrictions when importing recipes from external websites.
+
+## Features
+
+- Local CORS proxy server
+- No external dependencies for CORS bypassing
+- Fast and reliable recipe importing
+- Privacy-focused (requests stay on your network)
+
+## Installation
+
+1. Make sure you have Node.js installed (version 14 or higher)
+2. Extract this zip file to a folder
+3. Open a terminal/command prompt in the extracted folder
+4. Run: \`npm install\`
+
+## Usage
+
+1. Start the bridge server:
+   \`\`\`
+   npm start
+   \`\`\`
+
+2. The server will start on port 3001 by default
+3. You should see a message confirming the server is running
+4. The bridge will now handle CORS requests for recipe imports
+
+## Configuration
+
+- **Port**: Set the PORT environment variable to change the default port
+- **Network Access**: The server accepts connections from any origin by default
+
+## Health Check
+
+Visit \`http://localhost:3001/health\` to verify the server is running properly.
+
+## Endpoints
+
+- **GET /health** - Server health check
+- **GET /proxy?url=<target-url>** - CORS proxy endpoint
+
+## Troubleshooting
+
+1. **Port in use**: If port 3001 is busy, set a different port:
+   \`\`\`
+   PORT=3002 npm start
+   \`\`\`
+
+2. **Permission issues**: On some systems, you may need to run as administrator
+
+3. **Firewall**: Make sure your firewall allows the application to accept connections
+
+## Security Note
+
+This bridge is designed for local use only. Do not expose it to the internet without proper security measures.`,
+
+      'start.bat': `@echo off
+echo Starting Meal Planner CORS Bridge...
+echo.
+npm start
+pause`,
+
+      'start.sh': `#!/bin/bash
+echo "Starting Meal Planner CORS Bridge..."
+echo
+npm start`,
+
+      '.gitignore': `node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.DS_Store`
+    };
+
+    // Create zip content (simple text-based approach for demonstration)
+    let zipContent = 'PK\x03\x04'; // ZIP file signature
+    
+    // For a real implementation, you'd use a proper zip library
+    // For now, we'll create a simple archive structure
+    
+    // Create a blob with installation instructions and download link
+    const installationGuide = `# Meal Planner Desktop Bridge
+
+## Quick Installation
+
+1. Download and install Node.js from https://nodejs.org (if not already installed)
+2. Create a new folder called "meal-planner-bridge"
+3. Save the following files in that folder:
+
+### package.json
+\`\`\`json
+${bridgeFiles['package.json']}
+\`\`\`
+
+### server.js
+\`\`\`javascript
+${bridgeFiles['server.js']}
+\`\`\`
+
+### README.md
+\`\`\`markdown
+${bridgeFiles['README.md']}
+\`\`\`
+
+## Installation Steps
+
+1. Open a terminal/command prompt in the "meal-planner-bridge" folder
+2. Run: \`npm install\`
+3. Run: \`npm start\`
+4. The bridge will start on http://localhost:3001
+
+## Using with Meal Planner Pro
+
+Once the bridge is running, Meal Planner Pro will automatically detect and use it for recipe imports, providing faster and more reliable CORS handling.
+
+The bridge will show a message when it's ready to handle requests.`;
+
+    // Create and download the installation guide
+    const blob = new Blob([installationGuide], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'meal-planner-bridge-installation-guide.md';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    // Close settings menu
+    state.showSettingsMenu.value = false;
+    
+    // Show a helpful message
+    setTimeout(() => {
+      alert('Desktop Bridge installation guide downloaded!\n\nThis guide contains all the files needed to set up your local CORS proxy. Follow the instructions in the downloaded file to install and run the bridge on your computer.');
+    }, 100);
+  }
+
   // Initialize dark mode on startup
   onMounted(() => {
     document.addEventListener('click', (event) => {
@@ -818,7 +1052,6 @@ export function setupMethods(state) {
     toggleDefault,
     assignRecipe,
     selectRecipeForMenu,
-    removeRecipeFromMenu,
     clearDay,
     clearMenu,
     autoFillMenu,
@@ -837,6 +1070,7 @@ export function setupMethods(state) {
     getStartDayOptions,
     exportData,
     handleFileSelection,
-    importData
+    importData,
+    downloadDesktopBridge
   };
 }

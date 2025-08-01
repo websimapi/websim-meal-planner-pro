@@ -37,6 +37,9 @@
                         <button @click="showImportModal = true; showSettingsMenu = false" class="settings-item">
                             <i class="bi bi-upload"></i> Import Data
                         </button>
+                        <button @click="downloadDesktopBridge" class="settings-item">
+                            <i class="bi bi-cloud-arrow-down"></i> Download Desktop Bridge
+                        </button>
                     </div>
                 </div>
             </div>
@@ -109,24 +112,19 @@
                                 <div class="meal-container">
                                     <div class="meal-label">Breakfast:</div>
                                     <div class="meals">
-                                        <div v-if="day.breakfast && day.breakfast.length > 0" class="meal-list">
-                                            <div v-for="(recipe, recipeIndex) in day.breakfast" :key="recipeIndex" class="meal-assigned">
-                                                <div class="recipe-info">
-                                                    <h5>{{ recipe.title }}</h5>
-                                                    <p v-if="recipe.description" class="meal-description">{{ recipe.description }}</p>
-                                                </div>
-                                                <div class="meal-actions">
-                                                    <button @click="viewRecipe(recipe)" class="icon-btn">
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
-                                                    <button @click="removeRecipeFromMenu(weekIndex, dayIndex, 'breakfast', recipeIndex)" class="icon-btn">
-                                                        <i class="bi bi-x"></i>
-                                                    </button>
-                                                </div>
+                                        <div v-if="day.breakfast" class="meal-assigned">
+                                            <div class="recipe-info">
+                                                <h5>{{ day.breakfast.title }}</h5>
+                                                <p v-if="day.breakfast.description" class="meal-description">{{ day.breakfast.description }}</p>
                                             </div>
-                                            <button @click="assignRecipe(weekIndex, dayIndex, 'breakfast')" class="small-btn add-another">
-                                                <i class="bi bi-plus-circle"></i> Add Another
-                                            </button>
+                                            <div class="meal-actions">
+                                                <button @click="viewRecipe(day.breakfast)" class="icon-btn">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button @click="clearDay(weekIndex, dayIndex, 'breakfast')" class="icon-btn">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div v-else class="add-meal">
                                             <button @click="assignRecipe(weekIndex, dayIndex, 'breakfast')" class="small-btn">
@@ -140,24 +138,19 @@
                                 <div class="meal-container">
                                     <div class="meal-label">Lunch:</div>
                                     <div class="meals">
-                                        <div v-if="day.lunch && day.lunch.length > 0" class="meal-list">
-                                            <div v-for="(recipe, recipeIndex) in day.lunch" :key="recipeIndex" class="meal-assigned">
-                                                <div class="recipe-info">
-                                                    <h5>{{ recipe.title }}</h5>
-                                                    <p v-if="recipe.description" class="meal-description">{{ recipe.description }}</p>
-                                                </div>
-                                                <div class="meal-actions">
-                                                    <button @click="viewRecipe(recipe)" class="icon-btn">
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
-                                                    <button @click="removeRecipeFromMenu(weekIndex, dayIndex, 'lunch', recipeIndex)" class="icon-btn">
-                                                        <i class="bi bi-x"></i>
-                                                    </button>
-                                                </div>
+                                        <div v-if="day.lunch" class="meal-assigned">
+                                            <div class="recipe-info">
+                                                <h5>{{ day.lunch.title }}</h5>
+                                                <p v-if="day.lunch.description" class="meal-description">{{ day.lunch.description }}</p>
                                             </div>
-                                            <button @click="assignRecipe(weekIndex, dayIndex, 'lunch')" class="small-btn add-another">
-                                                <i class="bi bi-plus-circle"></i> Add Another
-                                            </button>
+                                            <div class="meal-actions">
+                                                <button @click="viewRecipe(day.lunch)" class="icon-btn">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button @click="clearDay(weekIndex, dayIndex, 'lunch')" class="icon-btn">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div v-else class="add-meal">
                                             <button @click="assignRecipe(weekIndex, dayIndex, 'lunch')" class="small-btn">
@@ -171,24 +164,19 @@
                                 <div class="meal-container">
                                     <div class="meal-label">Dinner:</div>
                                     <div class="meals">
-                                        <div v-if="day.dinner && day.dinner.length > 0" class="meal-list">
-                                            <div v-for="(recipe, recipeIndex) in day.dinner" :key="recipeIndex" class="meal-assigned">
-                                                <div class="recipe-info">
-                                                    <h5>{{ recipe.title }}</h5>
-                                                    <p v-if="recipe.description" class="meal-description">{{ recipe.description }}</p>
-                                                </div>
-                                                <div class="meal-actions">
-                                                    <button @click="viewRecipe(recipe)" class="icon-btn">
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
-                                                    <button @click="removeRecipeFromMenu(weekIndex, dayIndex, 'dinner', recipeIndex)" class="icon-btn">
-                                                        <i class="bi bi-x"></i>
-                                                    </button>
-                                                </div>
+                                        <div v-if="day.dinner" class="meal-assigned">
+                                            <div class="recipe-info">
+                                                <h5>{{ day.dinner.title }}</h5>
+                                                <p v-if="day.dinner.description" class="meal-description">{{ day.dinner.description }}</p>
                                             </div>
-                                            <button @click="assignRecipe(weekIndex, dayIndex, 'dinner')" class="small-btn add-another">
-                                                <i class="bi bi-plus-circle"></i> Add Another
-                                            </button>
+                                            <div class="meal-actions">
+                                                <button @click="viewRecipe(day.dinner)" class="icon-btn">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button @click="clearDay(weekIndex, dayIndex, 'dinner')" class="icon-btn">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div v-else class="add-meal">
                                             <button @click="assignRecipe(weekIndex, dayIndex, 'dinner')" class="small-btn">
