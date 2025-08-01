@@ -819,27 +819,43 @@ app.use(cors({
 // Parse JSON bodies
 app.use(express.json({ limit: '10mb' }));
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const timestamp = new Date().toLocaleString();
+  console.log(\`[\${timestamp}] \${req.method} \${req.url} - Client: \${req.ip || req.connection.remoteAddress}\`);
+  next();
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
+  const timestamp = new Date().toISOString();
+  console.log(\`🩺 Health check requested at \${timestamp}\`);
   res.json({ 
     status: 'ok', 
     message: 'Meal Planner CORS Bridge is running',
-    timestamp: new Date().toISOString()
+    timestamp: timestamp
   });
 });
 
 // CORS proxy endpoint
 app.get('/proxy', async (req, res) => {
   const { url } = req.query;
+  const timestamp = new Date().toLocaleString();
   
   if (!url) {
+    console.log(\`❌ [\${timestamp}] CORS Proxy Error: No URL parameter provided\`);
     return res.status(400).json({ error: 'URL parameter is required' });
   }
   
+  console.log(\`🔄 [\${timestamp}] CORS Proxy Request: \${url}\`);
+  console.log(\`   📡 Fetching content from: \${url}\`);
+  
   try {
     // Validate the URL
-    new URL(url);
+    const targetUrl = new URL(url);
+    console.log(\`   🎯 Target domain: \${targetUrl.hostname}\`);
     
+    const fetchStart = Date.now();
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -854,34 +870,85 @@ app.get('/proxy', async (req, res) => {
       timeout: 10000
     });
     
+    const fetchTime = Date.now() - fetchStart;
+    
     if (!response.ok) {
+      console.log(\`❌ [\${timestamp}] HTTP Error: \${response.status} \${response.statusText} for \${url}\`);
       throw new Error(\`HTTP error! status: \${response.status}\`);
     }
     
     const contentType = response.headers.get('content-type') || 'text/html';
     const data = await response.text();
+    const dataSize = data.length;
+    
+    console.log(\`✅ [\${timestamp}] Successfully proxied \${url}\`);
+    console.log(\`   ⏱️  Fetch time: \${fetchTime}ms\`);
+    console.log(\`   📄 Content-Type: \${contentType}\`);
+    console.log(\`   📊 Data size: \${dataSize} characters\`);
+    console.log(\`   🔍 Response preview: \${data.substring(0, 100).replace(/\\n/g, ' ')}...\`);
     
     res.set('Content-Type', contentType);
     res.send(data);
     
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error(\`💥 [\${timestamp}] CORS Proxy Error for \${url}:\`, error.message);
+    console.error(\`   🔍 Error details:\`, error);
+    
     res.status(500).json({ 
       error: 'Failed to fetch URL', 
       message: error.message,
-      url: url
+      url: url,
+      timestamp: timestamp
     });
   }
 });
 
+// 404 handler
+app.use((req, res) => {
+  const timestamp = new Date().toLocaleString();
+  console.log(\`404 [\${timestamp}] Not Found: \${req.method} \${req.url}\`);
+  res.status(404).json({ 
+    error: 'Endpoint not found', 
+    availableEndpoints: ['/health', '/proxy?url=<target-url>'],
+    timestamp: timestamp
+  });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  const timestamp = new Date().toLocaleString();
+  console.error(\`💥 [\${timestamp}] Unhandled Error:\`, err);
+  res.status(500).json({ 
+    error: 'Internal server error', 
+    message: err.message,
+    timestamp: timestamp
+  });
+});
+
 // Start the server
 app.listen(PORT, () => {
-  console.log(\`\\n🚀 Meal Planner CORS Bridge running on port \${PORT}\`);
-  console.log(\`📋 Health check: http://localhost:\${PORT}/health\`);
+  console.log(\`\\n🚀 ========================================\`);
+  console.log(\`🚀 Meal Planner CORS Bridge v1.0.0\`);
+  console.log(\`🚀 ========================================\`);
+  console.log(\`📡 Server running on port \${PORT}\`);
+  console.log(\`🏥 Health check: http://localhost:\${PORT}/health\`);
   console.log(\`🔗 Proxy endpoint: http://localhost:\${PORT}/proxy?url=<target-url>\`);
-  console.log(\`\\n💡 Usage: Set your recipe import service to use this local bridge\`);
-  console.log(\`   Example: http://localhost:\${PORT}/proxy?url=https://example.com/recipe\`);
-  console.log('\\n✨ Ready to serve CORS requests!\\n');
+  console.log(\`\\n💡 Usage Examples:\`);
+  console.log(\`   curl "http://localhost:\${PORT}/health"\`);
+  console.log(\`   curl "http://localhost:\${PORT}/proxy?url=https://example.com"\`);
+  console.log(\`\\n🔍 All requests will be logged to this console\`);
+  console.log(\`✨ Ready to serve CORS requests!\\n\`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\\n🛑 Received SIGINT. Gracefully shutting down...');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\\n🛑 Received SIGTERM. Gracefully shutting down...');
+  process.exit(0);
 });`,
 
       'README.md': `# Meal Planner CORS Bridge
