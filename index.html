@@ -76,9 +76,10 @@
                         <div class="menu-setting">
                             <label for="number-of-weeks">Number of Weeks:</label>
                             <select id="number-of-weeks" v-model="numberOfWeeks" @change="changeNumberOfWeeks(numberOfWeeks)">
-                                <option v-for="option in getNumberOfWeeksOptions()" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                </option>
+                                <option value="1">1 Week</option>
+                                <option value="2">2 Weeks</option>
+                                <option value="3">3 Weeks</option>
+                                <option value="4">4 Weeks</option>
                             </select>
                         </div>
                     </div>
